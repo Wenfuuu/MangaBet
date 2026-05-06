@@ -1,37 +1,17 @@
 <script lang="ts">
-	import type { Manga } from '$lib/types';
-	import { COVER_PALETTES } from '$lib/data';
+	import type { MangaSearchDTO } from '$lib/types';
 
-	let { manga, onclick }: { manga: Manga; onclick: () => void } = $props();
-
-	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
+	let { manga, onclick }: { manga: MangaSearchDTO; onclick: () => void } = $props();
 </script>
 
 <button class="card" {onclick}>
 	<div class="cover-wrap">
-		<div
-			class="cover"
-			style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"
-		></div>
-		<div class="status-badge" class:ongoing={manga.status === 'Ongoing'}>
-			{manga.status.toUpperCase()}
-		</div>
+		<img class="cover" src={manga.thumb} alt={manga.name} loading="lazy" />
 	</div>
-	<div class="title">{manga.title}</div>
+	<div class="title">{manga.name}</div>
 	<div class="author">{manga.author}</div>
-	<div class="genres">
-		{#each manga.genres.slice(0, 2) as genre}
-			<span class="genre-tag">{genre}</span>
-		{/each}
-	</div>
 	<div class="meta">
-		<span class="rating">
-			<svg width="10" height="10" viewBox="0 0 24 24" fill="#c9a37a">
-				<path d="M12 2l3 7 7 .6-5.3 4.7L18 22l-6-3.7L6 22l1.3-7.7L2 9.6 9 9z" />
-			</svg>
-			{manga.rating}
-		</span>
-		<span>Ch. {manga.chapters}</span>
+		<span>{manga.chapterLatest}</span>
 	</div>
 </button>
 
@@ -52,6 +32,7 @@
 		overflow: hidden;
 		border-radius: 6px;
 		position: relative;
+		background: var(--surface);
 		transition: transform 200ms;
 	}
 
@@ -62,23 +43,7 @@
 	.cover {
 		width: 100%;
 		height: 100%;
-	}
-
-	.status-badge {
-		position: absolute;
-		top: 8px;
-		right: 8px;
-		padding: 3px 8px;
-		background: rgba(11, 9, 8, 0.85);
-		border-radius: 4px;
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 10px;
-		color: var(--text-faint);
-		letter-spacing: 0.08em;
-	}
-
-	.status-badge.ongoing {
-		color: var(--accent);
+		object-fit: cover;
 	}
 
 	.title {
@@ -88,6 +53,11 @@
 		color: var(--text);
 		line-height: 1.25;
 		letter-spacing: -0.005em;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.author {
@@ -95,36 +65,14 @@
 		font-size: 12px;
 		color: var(--text-faint);
 		margin-top: -4px;
-	}
-
-	.genres {
-		display: flex;
-		gap: 6px;
-		flex-wrap: wrap;
-	}
-
-	.genre-tag {
-		padding: 2px 8px;
-		background: var(--brown-tint);
-		border-radius: 3px;
-		font-family: 'Inter', sans-serif;
-		font-size: 10.5px;
-		color: var(--accent);
-		letter-spacing: 0.02em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.meta {
-		display: flex;
-		align-items: center;
-		gap: 12px;
 		font-family: 'JetBrains Mono', monospace;
 		font-size: 11px;
 		color: var(--text-faint);
-	}
-
-	.rating {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
 	}
 </style>

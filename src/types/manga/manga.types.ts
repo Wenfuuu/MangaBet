@@ -11,3 +11,13 @@ export interface Manga {
 	cover: number;
 	mood: string;
 }
+
+export interface MangaSearchDTO {
+	id: number;
+	author: string;
+	name: string;
+	chapterLatest: string;
+	url: string;
+	thumb: string;
+	slug: string;
+}

@@ -1,82 +1,41 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
-	import { MANGA_LIBRARY } from '$lib/data';
+	import type { PageData } from './$types';
 	import SearchResultCard from '$lib/components/SearchResultCard.svelte';
-	import FilterGroup from '$lib/components/FilterGroup.svelte';
 
-	let genre = $state('All');
-	let status = $state('All');
-	let sort = $state('Relevance');
-
-	let urlQuery = $derived(page.url.searchParams.get('q') ?? '');
-
-	let allGenres = $derived.by(() => {
-		const s = new Set<string>();
-		MANGA_LIBRARY.forEach((m) => m.genres.forEach((g) => s.add(g)));
-		return ['All', ...Array.from(s).sort()];
-	});
-
-	let results = $derived.by(() => {
-		let list = [...MANGA_LIBRARY];
-		if (urlQuery.trim()) {
-			const q = urlQuery.toLowerCase();
-			list = list.filter(
-				(m) =>
-					m.title.toLowerCase().includes(q) ||
-					m.author.toLowerCase().includes(q) ||
-					m.genres.some((g) => g.toLowerCase().includes(q))
-			);
-		}
-		if (genre !== 'All') list = list.filter((m) => m.genres.includes(genre));
-		if (status !== 'All') list = list.filter((m) => m.status === status);
-		if (sort === 'Rating') list.sort((a, b) => b.rating - a.rating);
-		else if (sort === 'Newest') list.sort((a, b) => b.year - a.year);
-		else if (sort === 'Chapters') list.sort((a, b) => b.chapters - a.chapters);
-		return list;
-	});
+	let { data }: { data: PageData } = $props();
 </script>
 
 <div class="page">
 	<!-- Header -->
 	<div class="header">
-		<div class="eyebrow">{urlQuery.trim() ? 'Search results' : 'Browse'}</div>
+		<div class="eyebrow">{data.q.trim() ? 'Search results' : 'Browse'}</div>
 		<h1 class="headline">
-			{#if urlQuery.trim()}
-				Results for "<span class="query-highlight">{urlQuery}</span>"
+			{#if data.q.trim()}
+				Results for "<span class="query-highlight">{data.q}</span>"
 			{:else}
 				The complete shelf
 			{/if}
 		</h1>
-		<div class="count">{results.length} {results.length === 1 ? 'title' : 'titles'} found</div>
-	</div>
-
-	<!-- Filter bar -->
-	<div class="filter-bar">
-		<FilterGroup label="Genre" value={genre} options={allGenres} onchange={(v) => (genre = v)} />
-		<div class="divider"></div>
-		<FilterGroup
-			label="Status"
-			value={status}
-			options={['All', 'Ongoing', 'Completed']}
-			onchange={(v) => (status = v)}
-		/>
-		<div class="divider"></div>
-		<FilterGroup
-			label="Sort"
-			value={sort}
-			options={['Relevance', 'Rating', 'Newest', 'Chapters']}
-			onchange={(v) => (sort = v)}
-		/>
+		<div class="count">
+			{data.results.length}
+			{data.results.length === 1 ? 'title' : 'titles'} found
+		</div>
 	</div>
 
 	<!-- Results -->
-	{#if results.length === 0}
-		<div class="empty">No titles match those filters.</div>
+	{#if data.results.length === 0}
+		<div class="empty">
+			{#if data.q.trim()}
+				No titles found for "{data.q}".
+			{:else}
+				Search for a manga title, author, or genre above.
+			{/if}
+		</div>
 	{:else}
 		<div class="grid">
-			{#each results as m}
-				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.id}`)} />
+			{#each data.results as m}
+				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.slug}`)} />
 			{/each}
 		</div>
 	{/if}
@@ -90,7 +49,7 @@
 	}
 
 	.header {
-		margin-bottom: 32px;
+		margin-bottom: 36px;
 	}
 
 	.eyebrow {
@@ -120,24 +79,6 @@
 		font-size: 14px;
 		color: var(--text-faint);
 		margin-top: 8px;
-	}
-
-	.filter-bar {
-		display: flex;
-		gap: 24px;
-		align-items: center;
-		flex-wrap: wrap;
-		padding: 20px 24px;
-		background: var(--surface);
-		border: 1px solid rgba(160, 130, 100, 0.12);
-		border-radius: 10px;
-		margin-bottom: 36px;
-	}
-
-	.divider {
-		width: 1px;
-		align-self: stretch;
-		background: rgba(160, 130, 100, 0.12);
 	}
 
 	.grid {

@@ -1,23 +1,32 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { MANGA_LIBRARY, COVER_PALETTES } from '$lib/data';
+	import type { MangaSearchDTO } from '$lib/types';
 
 	let query = $state('');
 	let focused = $state(false);
 	let inputEl: HTMLInputElement | undefined = $state(undefined);
 	let wrapEl: HTMLDivElement | undefined = $state(undefined);
+	let results = $state<MangaSearchDTO[]>([]);
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	let results = $derived(
-		query.trim()
-			? MANGA_LIBRARY.filter(
-					(m) =>
-						m.title.toLowerCase().includes(query.toLowerCase()) ||
-						m.author.toLowerCase().includes(query.toLowerCase()) ||
-						m.genres.some((g) => g.toLowerCase().includes(query.toLowerCase()))
-				).slice(0, 6)
-			: []
-	);
+	$effect(() => {
+		const q = query;
+		clearTimeout(debounceTimer);
+		if (!q.trim()) {
+			results = [];
+			return;
+		}
+		debounceTimer = setTimeout(async () => {
+			try {
+				const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+				if (res.ok) results = (await res.json()).slice(0, 6);
+			} catch {
+				results = [];
+			}
+		}, 280);
+		return () => clearTimeout(debounceTimer);
+	});
 
 	let activePage = $derived(
 		page.url.pathname === '/'
@@ -34,10 +43,10 @@
 		goto(`/search?q=${encodeURIComponent(query.trim())}`);
 	}
 
-	function navigateToManga(id: string) {
+	function navigateToManga(slug: string) {
 		focused = false;
 		query = '';
-		goto(`/manga/${id}`);
+		goto(`/manga/${slug}`);
 	}
 
 	$effect(() => {
@@ -111,23 +120,19 @@
 			{#if focused && results.length > 0}
 				<div class="dropdown">
 					{#each results as m}
-						{@const palette = COVER_PALETTES[m.cover % COVER_PALETTES.length]}
 						<button
 							class="dropdown-result"
 							onmousedown={(e) => {
 								e.preventDefault();
-								navigateToManga(m.id);
+								navigateToManga(m.slug);
 							}}
 						>
-							<div
-								class="result-cover"
-								style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"
-							></div>
+							<img class="result-cover" src={m.thumb} alt={m.name} loading="lazy" />
 							<div class="result-info">
-								<div class="result-title">{m.title}</div>
-								<div class="result-meta">{m.author} · {m.genres[0]}</div>
+								<div class="result-title">{m.name}</div>
+								<div class="result-meta">{m.author}</div>
 							</div>
-							<span class="result-chapters">Ch.{m.chapters}</span>
+							<span class="result-chapters">{m.chapterLatest}</span>
 						</button>
 					{/each}
 					<button
@@ -320,6 +325,8 @@
 		height: 56px;
 		flex-shrink: 0;
 		border-radius: 3px;
+		object-fit: cover;
+		background: var(--surface);
 	}
 
 	.result-info {

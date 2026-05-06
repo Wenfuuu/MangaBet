@@ -1,8 +1,11 @@
-export const API_BASE = 'https://api.mangabet.example.com/v1';
+export const MANGABATS_BASE = 'https://www.mangabats.com';
+
+// Headers required by mangabats.com for JSON endpoints
+export const MANGABATS_HEADERS = {
+	Referer: MANGABATS_BASE,
+	'X-Requested-With': 'XMLHttpRequest',
+} as const;
 
 export const ENDPOINTS = {
-	search: (q: string) => `${API_BASE}/manga?q=${encodeURIComponent(q)}`,
-	mangaDetail: (id: string) => `${API_BASE}/manga/${id}`,
-	chapters: (id: string) => `${API_BASE}/manga/${id}/chapters`,
-	pages: (id: string, chapter: number) => `${API_BASE}/manga/${id}/chapter/${chapter}/pages`,
+	search: (q: string) => `${MANGABATS_BASE}/home/search/json?searchword=${encodeURIComponent(q)}`,
 } as const;
