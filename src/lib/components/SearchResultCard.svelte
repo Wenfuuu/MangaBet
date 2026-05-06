@@ -1,12 +1,13 @@
 <script lang="ts">
 	import type { MangaSearchDTO } from '$lib/types';
+	import { proxyImage } from '$lib/api';
 
 	let { manga, onclick }: { manga: MangaSearchDTO; onclick: () => void } = $props();
 </script>
 
 <button class="card" {onclick}>
 	<div class="cover-wrap">
-		<img class="cover" src={manga.thumb} alt={manga.name} loading="lazy" />
+		<img class="cover" src={proxyImage(manga.thumb)} alt={manga.name} loading="lazy" />
 	</div>
 	<div class="title">{manga.name}</div>
 	<div class="author">{manga.author}</div>
@@ -41,6 +42,8 @@
 	}
 
 	.cover {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;

@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { MangaSearchDTO } from '$lib/types';
+	import { proxyImage } from '$lib/api';
 
 	let query = $state('');
 	let focused = $state(false);
@@ -127,7 +128,7 @@
 								navigateToManga(m.slug);
 							}}
 						>
-							<img class="result-cover" src={m.thumb} alt={m.name} loading="lazy" />
+							<img class="result-cover" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />
 							<div class="result-info">
 								<div class="result-title">{m.name}</div>
 								<div class="result-meta">{m.author}</div>
