@@ -10,7 +10,7 @@ export const MANGABATS_IMAGE_HEADERS = {
 } as const;
 
 export const ENDPOINTS = {
-	search: (q: string) => `${MANGABATS_BASE}/home/search/json?searchword=${encodeURIComponent(q)}`,
+	search: (q: string, page = 1) => `${MANGABATS_BASE}/home/search/json?searchword=${encodeURIComponent(q)}&page=${page}`,
 } as const;
 
 export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;
