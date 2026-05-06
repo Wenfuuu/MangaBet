@@ -13,105 +13,27 @@
 	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
 </script>
 
-<button class="card" {onclick}>
+<button
+	class="flex gap-4 p-4 bg-[var(--surface)] border border-[var(--border-faint)] rounded-[10px] cursor-pointer text-left transition-all duration-200 w-full hover:bg-[var(--surface-2)] hover:border-[var(--border-strong)]"
+	{onclick}
+>
 	<div
-		class="cover"
+		class="w-[76px] h-[114px] shrink-0 rounded-[4px]"
 		style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"
 	></div>
-	<div class="info">
+	<div class="flex-1 flex flex-col justify-between min-w-0">
 		<div>
-			<div class="eyebrow">Chapter {chapter} · Page {page}</div>
-			<div class="title">{manga.title}</div>
-			<div class="author">{manga.author}</div>
+			<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.12em] uppercase mb-1">
+				Chapter {chapter} · Page {page}
+			</div>
+			<div class="font-serif text-[17px] font-medium text-[var(--text)] leading-[1.2] mb-1.5 truncate">{manga.title}</div>
+			<div class="font-sans text-xs text-[var(--text-faint)]">{manga.author}</div>
 		</div>
 		<div>
-			<div class="progress-track">
-				<div class="progress-fill" style="width: {progress * 100}%;"></div>
+			<div class="h-[3px] bg-[rgba(160,130,100,0.15)] rounded-[2px] overflow-hidden mb-1.5">
+				<div class="h-full bg-[var(--accent)]" style="width: {progress * 100}%;"></div>
 			</div>
-			<div class="resume">Resume reading →</div>
+			<div class="font-mono text-[10px] text-[var(--text-faint)]">Resume reading →</div>
 		</div>
 	</div>
 </button>
-
-<style>
-	.card {
-		display: flex;
-		gap: 16px;
-		padding: 16px;
-		background: var(--surface);
-		border: 1px solid var(--border-faint);
-		border-radius: 10px;
-		cursor: pointer;
-		text-align: left;
-		transition:
-			background 200ms,
-			border-color 200ms;
-		width: 100%;
-	}
-
-	.card:hover {
-		background: var(--surface-2);
-		border-color: var(--border-strong);
-	}
-
-	.cover {
-		width: 76px;
-		height: 114px;
-		flex-shrink: 0;
-		border-radius: 4px;
-	}
-
-	.info {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		min-width: 0;
-	}
-
-	.eyebrow {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 10px;
-		color: var(--text-faint);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		margin-bottom: 4px;
-	}
-
-	.title {
-		font-family: 'Source Serif 4', serif;
-		font-size: 17px;
-		font-weight: 500;
-		color: var(--text);
-		line-height: 1.2;
-		margin-bottom: 6px;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.author {
-		font-family: 'Inter', sans-serif;
-		font-size: 12px;
-		color: var(--text-faint);
-	}
-
-	.progress-track {
-		height: 3px;
-		background: rgba(160, 130, 100, 0.15);
-		border-radius: 2px;
-		overflow: hidden;
-		margin-bottom: 6px;
-	}
-
-	.progress-fill {
-		height: 100%;
-		background: var(--accent);
-	}
-
-	.resume {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 10px;
-		color: var(--text-faint);
-	}
-</style>

@@ -6,6 +6,7 @@
 
 	let query = $state('');
 	let focused = $state(false);
+	let menuOpen = $state(false);
 	let inputEl: HTMLInputElement | undefined = $state(undefined);
 	let wrapEl: HTMLDivElement | undefined = $state(undefined);
 	let results = $state<MangaSearchDTO[]>([]);
@@ -70,40 +71,34 @@
 	});
 </script>
 
-<header class="navbar">
-	<div class="inner">
+<header class="sticky top-0 z-50 bg-[rgba(11,9,8,0.88)] backdrop-blur-[14px] border-b border-[var(--border-faint)]">
+	<div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-3.5 flex items-center gap-4 sm:gap-8">
 		<!-- Logo -->
-		<button class="logo" onclick={() => goto('/')}>
-			<div class="logo-mark">M</div>
-			<span class="logo-text">MangaBet</span>
+		<button
+			class="flex items-center gap-2.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
+			onclick={() => goto('/')}
+		>
+			<div class="w-7 h-7 rounded-[4px] bg-gradient-to-br from-[#6b4324] to-[#a06a3c] grid place-items-center font-serif font-bold text-[17px] text-[#1a0f08]">M</div>
+			<span class="hidden sm:block font-serif font-semibold text-xl text-[var(--text)] tracking-[-0.01em]">MangaBet</span>
 		</button>
 
-		<!-- Nav links -->
-		<nav class="nav-links">
-			<button class="nav-link" class:active={activePage === 'home'} onclick={() => goto('/')}>
-				Home
-			</button>
+		<!-- Nav links — desktop -->
+		<nav class="hidden sm:flex gap-1">
 			<button
-				class="nav-link"
-				class:active={activePage === 'browse'}
+				class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'home' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
+				onclick={() => goto('/')}
+			>Home</button>
+			<button
+				class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
 				onclick={() => goto('/search')}
-			>
-				Browse
-			</button>
+			>Browse</button>
 		</nav>
 
 		<!-- Search box -->
-		<div class="search-wrap" bind:this={wrapEl}>
+		<div class="flex-1 max-w-[280px] sm:max-w-[480px] ml-auto relative" bind:this={wrapEl}>
 			<form onsubmit={submitSearch}>
-				<div class="search-box" class:focused>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="var(--text-faint)"
-						stroke-width="2"
-					>
+				<div class="flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg transition-all duration-150 {focused ? 'bg-[var(--surface-2)] border-[rgba(160,130,100,0.45)]' : 'bg-[var(--surface)] border-[var(--border)]'}">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" class="shrink-0">
 						<circle cx="11" cy="11" r="7" />
 						<path d="m20 20-3.5-3.5" />
 					</svg>
@@ -111,33 +106,33 @@
 						bind:this={inputEl}
 						bind:value={query}
 						onfocus={() => (focused = true)}
-						placeholder="Search titles, authors, genres…"
-						class="search-input"
+						placeholder="Search titles…"
+						class="flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-sm text-[var(--text)] placeholder:text-[var(--text-faint)]"
 					/>
-					<kbd class="search-kbd">⌘K</kbd>
+					<kbd class="hidden sm:block font-mono text-[11px] text-[var(--text-faint)] px-1.5 py-0.5 border border-[rgba(160,130,100,0.2)] rounded">⌘K</kbd>
 				</div>
 			</form>
 
 			{#if focused && results.length > 0}
-				<div class="dropdown">
+				<div class="absolute top-[calc(100%+6px)] left-0 right-0 bg-[var(--surface)] border border-[rgba(160,130,100,0.18)] rounded-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-y-auto max-h-[460px] z-10">
 					{#each results as m}
 						<button
-							class="dropdown-result"
+							class="flex items-center gap-3 w-full px-3 py-2.5 bg-transparent border-none cursor-pointer text-left hover:bg-[rgba(107,67,36,0.12)] transition-colors duration-[120ms]"
 							onmousedown={(e) => {
 								e.preventDefault();
 								navigateToManga(m.slug);
 							}}
 						>
-							<img class="result-cover" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />
-							<div class="result-info">
-								<div class="result-title">{m.name}</div>
-								<div class="result-meta">{m.author}</div>
+							<img class="w-[38px] h-14 shrink-0 rounded-[3px] object-cover bg-[var(--surface)]" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />
+							<div class="flex-1 min-w-0">
+								<div class="font-serif text-[15px] font-medium text-[var(--text)] truncate">{m.name}</div>
+								<div class="font-sans text-xs text-[var(--text-faint)] mt-0.5">{m.author}</div>
 							</div>
-							<span class="result-chapters">{m.chapterLatest}</span>
+							<span class="font-mono text-[11px] text-[var(--text-soft)] shrink-0">{m.chapterLatest}</span>
 						</button>
 					{/each}
 					<button
-						class="dropdown-footer"
+						class="block w-full px-3 py-3 bg-[rgba(107,67,36,0.06)] border-none border-t border-[rgba(160,130,100,0.12)] cursor-pointer font-sans text-[13px] text-[var(--accent)] text-center"
 						onmousedown={(e) => {
 							e.preventDefault();
 							submitSearch();
@@ -149,255 +144,44 @@
 			{/if}
 		</div>
 
-		<!-- Guest pill -->
-		<div class="guest-pill">
-			<div class="guest-avatar">
-				<svg
-					width="12"
-					height="12"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="#c9a37a"
-					stroke-width="2"
-				>
+		<!-- Guest pill — desktop -->
+		<div class="hidden sm:flex items-center gap-2 py-1.5 pl-2 pr-3 bg-[rgba(232,220,203,0.04)] border border-[var(--border)] rounded-full shrink-0">
+			<div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#3a2a1f] to-[#1a0f08] border border-[var(--border-strong)] grid place-items-center">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9a37a" stroke-width="2">
 					<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
 					<circle cx="12" cy="7" r="4" />
 				</svg>
 			</div>
-			<span class="guest-label">Guest</span>
+			<span class="font-sans text-xs text-[var(--text-soft)] tracking-[0.02em]">Guest</span>
 		</div>
+
+		<!-- Hamburger — mobile -->
+		<button
+			class="sm:hidden flex items-center justify-center w-8 h-8 bg-transparent border-none cursor-pointer text-[var(--text-faint)] shrink-0"
+			onclick={() => (menuOpen = !menuOpen)}
+			aria-label="Toggle menu"
+		>
+			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				{#if menuOpen}
+					<path d="M18 6 6 18M6 6l12 12" />
+				{:else}
+					<path d="M4 6h16M4 12h16M4 18h16" />
+				{/if}
+			</svg>
+		</button>
 	</div>
+
+	<!-- Mobile nav drawer -->
+	{#if menuOpen}
+		<nav class="sm:hidden border-t border-[var(--border-faint)] px-4 py-3 flex flex-col gap-1">
+			<button
+				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'home' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+				onclick={() => { menuOpen = false; goto('/'); }}
+			>Home</button>
+			<button
+				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+				onclick={() => { menuOpen = false; goto('/search'); }}
+			>Browse</button>
+		</nav>
+	{/if}
 </header>
-
-<style>
-	.navbar {
-		position: sticky;
-		top: 0;
-		z-index: 50;
-		background: rgba(11, 9, 8, 0.88);
-		backdrop-filter: blur(14px);
-		border-bottom: 1px solid var(--border-faint);
-	}
-
-	.inner {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 14px 32px;
-		display: flex;
-		align-items: center;
-		gap: 32px;
-	}
-
-	.logo {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 0;
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-shrink: 0;
-	}
-
-	.logo-mark {
-		width: 28px;
-		height: 28px;
-		border-radius: 4px;
-		background: linear-gradient(135deg, #6b4324, #a06a3c);
-		display: grid;
-		place-items: center;
-		font-family: 'Source Serif 4', serif;
-		font-weight: 700;
-		font-size: 17px;
-		color: #1a0f08;
-	}
-
-	.logo-text {
-		font-family: 'Source Serif 4', serif;
-		font-weight: 600;
-		font-size: 20px;
-		color: var(--text);
-		letter-spacing: -0.01em;
-	}
-
-	.nav-links {
-		display: flex;
-		gap: 4px;
-	}
-
-	.nav-link {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 8px 14px;
-		border-radius: 6px;
-		font-family: 'Inter', sans-serif;
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--text-faint);
-		transition: color 150ms;
-	}
-
-	.nav-link:hover,
-	.nav-link.active {
-		color: var(--text);
-	}
-
-	.search-wrap {
-		flex: 1;
-		max-width: 480px;
-		margin-left: auto;
-		position: relative;
-	}
-
-	.search-box {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 10px 14px;
-		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		transition: all 150ms;
-	}
-
-	.search-box.focused {
-		background: var(--surface-2);
-		border-color: rgba(160, 130, 100, 0.45);
-	}
-
-	.search-input {
-		flex: 1;
-		background: none;
-		border: none;
-		outline: none;
-		font-family: 'Inter', sans-serif;
-		font-size: 14px;
-		color: var(--text);
-	}
-
-	.search-input::placeholder {
-		color: var(--text-faint);
-	}
-
-	.search-kbd {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 11px;
-		color: var(--text-faint);
-		padding: 2px 6px;
-		border: 1px solid rgba(160, 130, 100, 0.2);
-		border-radius: 4px;
-	}
-
-	.dropdown {
-		position: absolute;
-		top: calc(100% + 6px);
-		left: 0;
-		right: 0;
-		background: var(--surface);
-		border: 1px solid rgba(160, 130, 100, 0.18);
-		border-radius: 10px;
-		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-		overflow: hidden;
-		max-height: 460px;
-		overflow-y: auto;
-		z-index: 10;
-	}
-
-	.dropdown-result {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		width: 100%;
-		padding: 10px 12px;
-		background: none;
-		border: none;
-		cursor: pointer;
-		text-align: left;
-		transition: background 120ms;
-	}
-
-	.dropdown-result:hover {
-		background: rgba(107, 67, 36, 0.12);
-	}
-
-	.result-cover {
-		width: 38px;
-		height: 56px;
-		flex-shrink: 0;
-		border-radius: 3px;
-		object-fit: cover;
-		background: var(--surface);
-	}
-
-	.result-info {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.result-title {
-		font-family: 'Source Serif 4', serif;
-		font-size: 15px;
-		font-weight: 500;
-		color: var(--text);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.result-meta {
-		font-family: 'Inter', sans-serif;
-		font-size: 12px;
-		color: var(--text-faint);
-		margin-top: 2px;
-	}
-
-	.result-chapters {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 11px;
-		color: var(--text-soft);
-		flex-shrink: 0;
-	}
-
-	.dropdown-footer {
-		display: block;
-		width: 100%;
-		padding: 12px;
-		background: rgba(107, 67, 36, 0.06);
-		border: none;
-		border-top: 1px solid rgba(160, 130, 100, 0.12);
-		cursor: pointer;
-		font-family: 'Inter', sans-serif;
-		font-size: 13px;
-		color: var(--accent);
-		text-align: center;
-	}
-
-	.guest-pill {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 6px 12px 6px 8px;
-		background: rgba(232, 220, 203, 0.04);
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		flex-shrink: 0;
-	}
-
-	.guest-avatar {
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		background: linear-gradient(135deg, #3a2a1f, #1a0f08);
-		border: 1px solid var(--border-strong);
-		display: grid;
-		place-items: center;
-	}
-
-	.guest-label {
-		font-family: 'Inter', sans-serif;
-		font-size: 12px;
-		color: var(--text-soft);
-		letter-spacing: 0.02em;
-	}
-</style>

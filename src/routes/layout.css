@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+@theme {
+	--font-sans: 'Inter', sans-serif;
+	--font-serif: 'Source Serif 4', serif;
+	--font-mono: 'JetBrains Mono', monospace;
+}
+
 :root {
 	--ink: #0b0908;
 	--ink-deep: #0a0807;

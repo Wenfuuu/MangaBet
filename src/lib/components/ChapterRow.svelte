@@ -6,101 +6,27 @@
 		$props();
 </script>
 
-<button class="row" class:last={isLast} {onclick}>
-	<div class="num">#{ch.number.toString().padStart(3, '0')}</div>
-	<div class="info">
-		<div class="title">{ch.title}</div>
-		<div class="meta">
+<button
+	class="flex items-center gap-5 px-5 py-4 bg-transparent border-none cursor-pointer text-left transition-colors duration-150 w-full hover:bg-[rgba(201,163,122,0.06)] {isLast
+		? ''
+		: 'border-b border-[rgba(160,130,100,0.08)]'}"
+	{onclick}
+>
+	<div class="w-12 shrink-0 font-mono text-xs font-medium text-[var(--accent)]">
+		#{ch.number.toString().padStart(3, '0')}
+	</div>
+	<div class="flex-1 min-w-0">
+		<div class="font-serif text-base font-medium text-[var(--text)] leading-[1.3]">{ch.title}</div>
+		<div class="font-sans text-xs text-[var(--text-faint)] mt-1 flex items-center gap-2 flex-wrap">
 			<span>{ch.pages} pages</span>
-			<span class="dot"></span>
+			<span class="w-0.5 h-0.5 rounded-full bg-[var(--text-quiet)] shrink-0"></span>
 			<span>{fmtDate(ch.date)}</span>
 			{#if ch.isNew}
-				<span class="new-badge">NEW</span>
+				<span class="px-1.5 py-0.5 bg-[rgba(201,163,122,0.18)] rounded-[3px] font-mono text-[10px] text-[var(--accent)] tracking-[0.06em]">NEW</span>
 			{/if}
 		</div>
 	</div>
-	<svg
-		width="16"
-		height="16"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="var(--text-quiet)"
-		stroke-width="2"
-	>
+	<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-quiet)" stroke-width="2" class="shrink-0">
 		<polyline points="9 18 15 12 9 6" />
 	</svg>
 </button>
-
-<style>
-	.row {
-		display: flex;
-		align-items: center;
-		gap: 20px;
-		padding: 16px 20px;
-		background: transparent;
-		border: none;
-		border-bottom: 1px solid rgba(160, 130, 100, 0.08);
-		cursor: pointer;
-		text-align: left;
-		transition: background 150ms;
-		width: 100%;
-	}
-
-	.row.last {
-		border-bottom: none;
-	}
-
-	.row:hover {
-		background: rgba(201, 163, 122, 0.06);
-	}
-
-	.num {
-		width: 48px;
-		flex-shrink: 0;
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 12px;
-		font-weight: 500;
-		color: var(--accent);
-	}
-
-	.info {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.title {
-		font-family: 'Source Serif 4', serif;
-		font-size: 16px;
-		font-weight: 500;
-		color: var(--text);
-		line-height: 1.3;
-	}
-
-	.meta {
-		font-family: 'Inter', sans-serif;
-		font-size: 12px;
-		color: var(--text-faint);
-		margin-top: 4px;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.dot {
-		width: 2px;
-		height: 2px;
-		border-radius: 50%;
-		background: var(--text-quiet);
-		flex-shrink: 0;
-	}
-
-	.new-badge {
-		padding: 2px 6px;
-		background: rgba(201, 163, 122, 0.18);
-		border-radius: 3px;
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 10px;
-		color: var(--accent);
-		letter-spacing: 0.06em;
-	}
-</style>

@@ -6,26 +6,26 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
-<div class="page">
-	<!-- Header -->
-	<div class="header">
-		<div class="eyebrow">{data.q.trim() ? 'Search results' : 'Browse'}</div>
-		<h1 class="headline">
+<div class="max-w-[1400px] mx-auto px-4 sm:px-8 pt-9 pb-24">
+	<div class="mb-9">
+		<div class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.18em] uppercase mb-2.5">
+			{data.q.trim() ? 'Search results' : 'Browse'}
+		</div>
+		<h1 class="font-serif text-3xl sm:text-[44px] font-semibold text-[var(--text)] m-0 tracking-[-0.02em]">
 			{#if data.q.trim()}
-				Results for "<span class="query-highlight">{data.q}</span>"
+				Results for "<span class="text-[var(--accent)]">{data.q}</span>"
 			{:else}
 				The complete shelf
 			{/if}
 		</h1>
-		<div class="count">
+		<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
 			{data.results.length}
 			{data.results.length === 1 ? 'title' : 'titles'} found
 		</div>
 	</div>
 
-	<!-- Results -->
 	{#if data.results.length === 0}
-		<div class="empty">
+		<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
 			{#if data.q.trim()}
 				No titles found for "{data.q}".
 			{:else}
@@ -33,66 +33,10 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="grid">
+		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 sm:gap-x-7 gap-y-8 sm:gap-y-9">
 			{#each data.results as m}
 				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.slug}`)} />
 			{/each}
 		</div>
 	{/if}
 </div>
-
-<style>
-	.page {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 36px 32px 96px;
-	}
-
-	.header {
-		margin-bottom: 36px;
-	}
-
-	.eyebrow {
-		font-family: 'JetBrains Mono', monospace;
-		font-size: 11px;
-		color: var(--text-faint);
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		margin-bottom: 10px;
-	}
-
-	.headline {
-		font-family: 'Source Serif 4', serif;
-		font-size: 44px;
-		font-weight: 600;
-		color: var(--text);
-		margin: 0;
-		letter-spacing: -0.02em;
-	}
-
-	.query-highlight {
-		color: var(--accent);
-	}
-
-	.count {
-		font-family: 'Inter', sans-serif;
-		font-size: 14px;
-		color: var(--text-faint);
-		margin-top: 8px;
-	}
-
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-		column-gap: 28px;
-		row-gap: 36px;
-	}
-
-	.empty {
-		padding: 80px 0;
-		text-align: center;
-		font-family: 'Source Serif 4', serif;
-		font-size: 24px;
-		color: var(--text-faint);
-	}
-</style>
