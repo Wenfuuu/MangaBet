@@ -27,7 +27,7 @@
 	{#if data.results.length === 0}
 		<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
 			{#if data.q.trim()}
-				No titles found for "{data.q}".
+				{data.page > 1 ? `No more results for "${data.q}".` : `No titles found for "${data.q}".`}
 			{:else}
 				Search for a manga title, author, or genre above.
 			{/if}
@@ -37,6 +37,38 @@
 			{#each data.results as m}
 				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.slug}`)} />
 			{/each}
+		</div>
+	{/if}
+
+	{#if data.q.trim()}
+		<div class="mt-12 flex items-center justify-center gap-3">
+			{#if data.page > 1}
+				<a
+					href="/search?q={encodeURIComponent(data.q)}&page={data.page - 1}"
+					class="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg font-sans text-sm text-[var(--text-soft)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+					Previous
+				</a>
+			{/if}
+
+			<span class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.12em] px-2">
+				PAGE {data.page}
+			</span>
+
+			{#if data.results.length > 0}
+				<a
+					href="/search?q={encodeURIComponent(data.q)}&page={data.page + 1}"
+					class="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg font-sans text-sm text-[var(--text-soft)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150"
+				>
+					Next
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="9 18 15 12 9 6" />
+					</svg>
+				</a>
+			{/if}
 		</div>
 	{/if}
 </div>
