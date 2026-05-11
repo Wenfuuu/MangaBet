@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { MANGA_LIBRARY, COVER_PALETTES, generateChapters } from '$lib/data';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
+	import { proxyImage } from '$lib/api';
 
 	let manga = $derived(
 		MANGA_LIBRARY.find((m) => m.id === page.params.id) ?? MANGA_LIBRARY[0]
@@ -15,6 +16,7 @@
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
 	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
+	let thumb = $derived(page.state?.thumb as string | undefined);
 </script>
 
 <div>
@@ -28,10 +30,13 @@
 
 		<div class="relative max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 sm:pt-14 pb-10 sm:pb-12 flex flex-col sm:flex-row gap-8 sm:gap-12">
 			<!-- Cover -->
-			<div
-				class="w-40 sm:w-[280px] self-center sm:self-start shrink-0 rounded-md shadow-[0_30px_80px_rgba(0,0,0,0.5)]"
-				style="aspect-ratio: 2/3; background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"
-			></div>
+			<div class="w-40 sm:w-[280px] self-center sm:self-start shrink-0 rounded-md shadow-[0_30px_80px_rgba(0,0,0,0.5)] overflow-hidden" style="aspect-ratio: 2/3;">
+				{#if thumb}
+					<img class="w-full h-full object-cover" src={proxyImage(thumb)} alt={manga.title} />
+				{:else}
+					<div class="w-full h-full" style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"></div>
+				{/if}
+			</div>
 
 			<!-- Info -->
 			<div class="flex-1 sm:pt-3">

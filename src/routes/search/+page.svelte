@@ -35,7 +35,7 @@
 	{:else}
 		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 sm:gap-x-7 gap-y-8 sm:gap-y-9">
 			{#each data.results as m}
-				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.slug}`)} />
+				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.slug}`, { state: { id: m.id, name: m.name, author: m.author, thumb: m.thumb } })} />
 			{/each}
 		</div>
 	{/if}
