@@ -205,7 +205,7 @@ const CHAPTER_TITLES = [
 
 export function generateChapters(count: number): Chapter[] {
 	const out: Chapter[] = [];
-	const today = new Date('2026-05-06');
+	const today = new Date();
 	for (let i = count; i >= 1; i--) {
 		const t = CHAPTER_TITLES[(i - 1) % CHAPTER_TITLES.length];
 		const daysAgo = (count - i) * 6 + Math.floor(((i * 7) % 5));
@@ -223,7 +223,7 @@ export function generateChapters(count: number): Chapter[] {
 }
 
 export function fmtDate(d: Date): string {
-	const today = new Date('2026-05-06');
+	const today = new Date();
 	const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
 	if (days === 0) return 'Today';
 	if (days === 1) return 'Yesterday';

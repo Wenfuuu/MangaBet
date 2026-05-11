@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { MANGA_LIBRARY, COVER_PALETTES, generateChapters } from '$lib/data';
+	import { MANGA_LIBRARY, COVER_PALETTES } from '$lib/data';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import { proxyImage } from '$lib/api';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 
 	let manga = $derived(
 		MANGA_LIBRARY.find((m) => m.id === page.params.id) ?? MANGA_LIBRARY[0]
 	);
-	let chapters = $derived(generateChapters(manga.chapters));
+	let chapters = $derived(data.chapters);
 	let order = $state<'desc' | 'asc'>('desc');
 	let visible = $derived(
 		chapters
@@ -62,7 +65,7 @@
 					</div>
 					<div>
 						<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.14em] uppercase mb-1">Chapters</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">{manga.chapters}</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">{chapters.length}</div>
 					</div>
 					<div>
 						<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.14em] uppercase mb-1">Readers</div>
@@ -96,7 +99,7 @@
 					</button>
 					<button
 						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium cursor-pointer"
-						onclick={() => goto(`/manga/${manga.id}/chapter/${manga.chapters}`)}
+						onclick={() => goto(`/manga/${manga.id}/chapter/${chapters[0]?.number ?? 1}`)}
 					>Latest chapter</button>
 					<button
 						class="inline-flex items-center justify-center px-4 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg cursor-pointer"

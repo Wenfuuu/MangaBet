@@ -18,8 +18,10 @@
 	<div class="flex-1 min-w-0">
 		<div class="font-serif text-base font-medium text-[var(--text)] leading-[1.3]">{ch.title}</div>
 		<div class="font-sans text-xs text-[var(--text-faint)] mt-1 flex items-center gap-2 flex-wrap">
-			<span>{ch.pages} pages</span>
-			<span class="w-0.5 h-0.5 rounded-full bg-[var(--text-quiet)] shrink-0"></span>
+			{#if ch.pages != null}
+				<span>{ch.pages} pages</span>
+				<span class="w-0.5 h-0.5 rounded-full bg-[var(--text-quiet)] shrink-0"></span>
+			{/if}
 			<span>{fmtDate(ch.date)}</span>
 			{#if ch.isNew}
 				<span class="px-1.5 py-0.5 bg-[rgba(201,163,122,0.18)] rounded-[3px] font-mono text-[10px] text-[var(--accent)] tracking-[0.06em]">NEW</span>
