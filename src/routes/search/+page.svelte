@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import SearchResultCard from '$lib/components/SearchResultCard.svelte';
+	import { mangaDetailUrl, saveMangaDTO } from '$lib/api';
 
 	let { data }: { data: PageData } = $props();
 </script>
@@ -35,7 +36,7 @@
 	{:else}
 		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 sm:gap-x-7 gap-y-8 sm:gap-y-9">
 			{#each data.results as m}
-				<SearchResultCard manga={m} onclick={() => goto(`/manga/${m.slug}`, { state: { id: m.id, name: m.name, author: m.author, thumb: m.thumb } })} />
+				<SearchResultCard manga={m} onclick={() => { saveMangaDTO(m); goto(mangaDetailUrl(m)); }} />
 			{/each}
 		</div>
 	{/if}

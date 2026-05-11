@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { MangaSearchDTO } from '$lib/types';
-	import { proxyImage } from '$lib/api';
+	import { proxyImage, mangaDetailUrl, saveMangaDTO } from '$lib/api';
 
 	let query = $state('');
 	let focused = $state(false);
@@ -45,10 +45,11 @@
 		goto(`/search?q=${encodeURIComponent(query.trim())}`);
 	}
 
-	function navigateToManga(slug: string) {
+	function navigateToManga(manga: MangaSearchDTO) {
 		focused = false;
 		query = '';
-		goto(`/manga/${slug}`);
+		saveMangaDTO(manga);
+		goto(mangaDetailUrl(manga));
 	}
 
 	$effect(() => {
@@ -120,7 +121,7 @@
 							class="flex items-center gap-3 w-full px-3 py-2.5 bg-transparent border-none cursor-pointer text-left hover:bg-[rgba(107,67,36,0.12)] transition-colors duration-[120ms]"
 							onmousedown={(e) => {
 								e.preventDefault();
-								navigateToManga(m.slug);
+								navigateToManga(m);
 							}}
 						>
 							<img class="w-[38px] h-14 shrink-0 rounded-[3px] object-cover bg-[var(--surface)]" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />

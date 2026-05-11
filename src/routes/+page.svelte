@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { MANGA_LIBRARY } from '$lib/data';
+	import { mangaDetailUrl } from '$lib/api';
 	import ContinueCard from '$lib/components/ContinueCard.svelte';
 	import type { ContinueItem } from '$lib/types';
+	import type { MangaSearchDTO } from '$lib/types';
 
 	let continueItems = $state<ContinueItem[]>([]);
 
@@ -12,9 +13,10 @@
 			const key = localStorage.key(i);
 			const match = key?.match(/^mangabet:reader:(.+):(\d+)$/);
 			if (match) {
-				const [, mid, ch] = match;
-				const manga = MANGA_LIBRARY.find((x) => x.id === mid);
-				if (!manga) continue;
+				const [, slug, ch] = match;
+				const raw = localStorage.getItem(`mangabet:manga:${slug}`);
+				if (!raw) continue;
+				const manga: MangaSearchDTO = JSON.parse(raw);
 				const p = parseInt(localStorage.getItem(key!) ?? '1', 10) || 1;
 				items.push({ manga, chapter: parseInt(ch, 10), page: p });
 			}
@@ -48,7 +50,7 @@
 						manga={item.manga}
 						chapter={item.chapter}
 						page={item.page}
-						onclick={() => goto(`/manga/${item.manga.id}/chapter/${item.chapter}`)}
+						onclick={() => goto(mangaDetailUrl(item.manga))}
 					/>
 				{/each}
 			</div>

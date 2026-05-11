@@ -5,12 +5,7 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		interface PageState {
-			id?: number;
-			name?: string;
-			author?: string;
-			thumb?: string;
-		}
+		// interface PageState {}
 		// interface Platform {}
 	}
 }

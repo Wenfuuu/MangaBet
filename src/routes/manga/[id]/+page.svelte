@@ -16,9 +16,9 @@
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
 	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
-	let thumb = $derived(page.state.thumb);
-	let name = $derived(page.state.name ?? manga.title);
-	let author = $derived(page.state.author ?? manga.author);
+	let thumb = $derived(page.url.searchParams.get('thumb') ?? undefined);
+	let name = $derived(page.url.searchParams.get('name') ?? manga.title);
+	let author = $derived(page.url.searchParams.get('author') ?? manga.author);
 </script>
 
 <div>
