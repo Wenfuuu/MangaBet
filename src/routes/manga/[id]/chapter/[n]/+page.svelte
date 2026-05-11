@@ -66,6 +66,7 @@
 	// Keyboard navigation
 	$effect(() => {
 		const handleKey = (e: KeyboardEvent) => {
+			if (mode === 'wide') return;
 			if (e.key === 'ArrowRight' || e.key === ' ') {
 				e.preventDefault();
 				goNext();
@@ -162,7 +163,7 @@
 	<!-- Bottom bar (hidden in long mode) -->
 	<div
 		class="bottom-bar"
-		style="transform: {chromeVisible && mode !== 'long' ? 'translateY(0)' : 'translateY(100%)'};"
+		style="transform: {chromeVisible && mode !== 'long' && mode !== 'wide' ? 'translateY(0)' : 'translateY(100%)'};"
 	>
 		<div class="bar-inner">
 			<button

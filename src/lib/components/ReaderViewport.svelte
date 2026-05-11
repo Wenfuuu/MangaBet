@@ -8,14 +8,27 @@
 	$effect(() => {
 		if (!wideScrollEl) return;
 		const el = wideScrollEl;
-		const handler = (e: WheelEvent) => {
+
+		const wheelHandler = (e: WheelEvent) => {
 			if (e.deltaY !== 0) {
 				e.preventDefault();
 				el.scrollLeft += e.deltaY;
 			}
 		};
-		el.addEventListener('wheel', handler, { passive: false });
-		return () => el.removeEventListener('wheel', handler);
+		el.addEventListener('wheel', wheelHandler, { passive: false });
+
+		const keyHandler = (e: KeyboardEvent) => {
+			if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+			e.preventDefault();
+			const pageWidth = el.clientHeight * (2 / 3);
+			el.scrollBy({ left: e.key === 'ArrowRight' ? pageWidth : -pageWidth, behavior: 'smooth' });
+		};
+		window.addEventListener('keydown', keyHandler);
+
+		return () => {
+			el.removeEventListener('wheel', wheelHandler);
+			window.removeEventListener('keydown', keyHandler);
+		};
 	});
 
 	let {
