@@ -16,7 +16,9 @@
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
 	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
-	let thumb = $derived(page.state?.thumb as string | undefined);
+	let thumb = $derived(page.state.thumb);
+	let name = $derived(page.state.name ?? manga.title);
+	let author = $derived(page.state.author ?? manga.author);
 </script>
 
 <div>
@@ -32,7 +34,7 @@
 			<!-- Cover -->
 			<div class="w-40 sm:w-[280px] self-center sm:self-start shrink-0 rounded-md shadow-[0_30px_80px_rgba(0,0,0,0.5)] overflow-hidden" style="aspect-ratio: 2/3;">
 				{#if thumb}
-					<img class="w-full h-full object-cover" src={proxyImage(thumb)} alt={manga.title} />
+					<img class="w-full h-full object-cover" src={proxyImage(thumb)} alt={name} />
 				{:else}
 					<div class="w-full h-full" style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"></div>
 				{/if}
@@ -46,8 +48,8 @@
 					<span class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.12em]">{manga.year}</span>
 				</div>
 
-				<h1 class="font-serif text-4xl sm:text-[56px] font-semibold text-[var(--text)] m-0 tracking-[-0.025em] leading-none text-balance">{manga.title}</h1>
-				<div class="font-sans text-base text-[var(--text-soft)] mt-3.5">by <span class="text-[var(--text)]">{manga.author}</span></div>
+				<h1 class="font-serif text-4xl sm:text-[56px] font-semibold text-[var(--text)] m-0 tracking-[-0.025em] leading-none text-balance">{name}</h1>
+				<div class="font-sans text-base text-[var(--text-soft)] mt-3.5">by <span class="text-[var(--text)]">{author}</span></div>
 
 				<div class="flex flex-wrap gap-6 sm:gap-8 mt-7">
 					<div>
