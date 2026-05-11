@@ -107,7 +107,6 @@
 		padding: 24px 16px;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
 	}
 
 	/* Wide strip */
