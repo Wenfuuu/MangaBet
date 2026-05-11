@@ -3,8 +3,11 @@
 	import { page } from '$app/state';
 	import { MANGA_LIBRARY, generateChapters } from '$lib/data';
 	import type { ReaderMode } from '$lib/types';
+	import type { PageData } from './$types';
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
+
+	let { data }: { data: PageData } = $props();
 
 	let manga = $derived(
 		MANGA_LIBRARY.find((m) => m.id === page.params.id) ?? MANGA_LIBRARY[0]
@@ -14,7 +17,7 @@
 	let currentCh = $derived(
 		allChapters.find((c) => c.number === chapterNum) ?? allChapters[allChapters.length - 1]
 	);
-	let totalPages = $derived(currentCh.pages);
+	let totalPages = $derived(data.pages.length);
 
 	let chapterIdx = $derived(allChapters.findIndex((c) => c.number === chapterNum));
 	let prevChapter = $derived(allChapters[chapterIdx + 1]);
@@ -27,14 +30,14 @@
 
 	// Restore page from localStorage
 	$effect(() => {
-		const key = `mangabet:reader:${manga.id}:${chapterNum}`;
+		const key = `mangabet:reader:${page.params.id}:${chapterNum}`;
 		const saved = parseInt(localStorage.getItem(key) ?? '1', 10);
 		currentPage = saved > 0 && saved <= totalPages ? saved : 1;
 	});
 
 	// Persist page to localStorage
 	$effect(() => {
-		localStorage.setItem(`mangabet:reader:${manga.id}:${chapterNum}`, String(currentPage));
+		localStorage.setItem(`mangabet:reader:${page.params.id}:${chapterNum}`, String(currentPage));
 	});
 
 	// Restore reader mode from localStorage
@@ -86,7 +89,7 @@
 	<!-- Top bar -->
 	<div class="top-bar" style="transform: {chromeVisible ? 'translateY(0)' : 'translateY(-100%)'};">
 		<div class="bar-inner">
-			<button class="back-btn" onclick={() => goto(`/manga/${manga.id}`)}>
+			<button class="back-btn" onclick={() => goto(`/manga/${page.params.id}`)}>
 				<svg
 					width="14"
 					height="14"
@@ -148,6 +151,7 @@
 		{totalPages}
 		{manga}
 		chapter={currentCh.number}
+		imageUrls={data.pages}
 		next={goNext}
 		prev={goPrev}
 		toggleChrome={() => (chromeVisible = !chromeVisible)}
@@ -216,6 +220,7 @@
 	{#if sidebarOpen}
 		<ReaderSidebar
 			{manga}
+			mangaSlug={page.params.id}
 			currentCh={currentCh}
 			{allChapters}
 			page={currentPage}

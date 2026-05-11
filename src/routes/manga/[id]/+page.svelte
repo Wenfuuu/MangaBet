@@ -90,7 +90,7 @@
 				<div class="flex flex-wrap gap-3 items-center mt-6">
 					<button
 						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
-						onclick={() => goto(`/manga/${manga.id}/chapter/1`)}
+						onclick={() => goto(`/manga/${page.params.id}/chapter/1`)}
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 							<polygon points="5,3 19,12 5,21" />
@@ -99,7 +99,7 @@
 					</button>
 					<button
 						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium cursor-pointer"
-						onclick={() => goto(`/manga/${manga.id}/chapter/${chapters[0]?.number ?? 1}`)}
+						onclick={() => goto(`/manga/${page.params.id}/chapter/${chapters[0]?.number ?? 1}`)}
 					>Latest chapter</button>
 					<button
 						class="inline-flex items-center justify-center px-4 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg cursor-pointer"
@@ -150,7 +150,7 @@
 				<ChapterRow
 					{ch}
 					isLast={i === visible.length - 1}
-					onclick={() => goto(`/manga/${manga.id}/chapter/${ch.number}`)}
+					onclick={() => goto(`/manga/${page.params.id}/chapter/${ch.number}`)}
 				/>
 			{/each}
 		</div>

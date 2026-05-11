@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Chapter, Manga, ReaderMode } from '$lib/types';
-	import MangaPagePlaceholder from './MangaPagePlaceholder.svelte';
 	import ChapterEndPanel from './ChapterEndPanel.svelte';
+	import { proxyImage } from '$lib/api';
 
 	let {
 		mode,
@@ -9,6 +9,7 @@
 		totalPages,
 		manga,
 		chapter,
+		imageUrls,
 		next,
 		prev,
 		toggleChrome,
@@ -20,26 +21,20 @@
 		totalPages: number;
 		manga: Manga;
 		chapter: number;
+		imageUrls: string[];
 		next: () => void;
 		prev: () => void;
 		toggleChrome: () => void;
 		prevChapter?: Chapter;
 		nextChapter?: Chapter;
 	} = $props();
-
-	let pages = $derived(Array.from({ length: totalPages }, (_, i) => i + 1));
 </script>
 
 {#if mode === 'long'}
 	<div class="long-wrap">
 		<div class="long-inner">
-			{#each pages as p}
-				<MangaPagePlaceholder
-					pageNum={p}
-					{totalPages}
-					mangaTitle={manga.title}
-					{chapter}
-				/>
+			{#each imageUrls as url}
+				<img class="long-img" src={proxyImage(url)} alt="" loading="lazy" />
 			{/each}
 			<ChapterEndPanel {manga} {nextChapter} />
 		</div>
@@ -48,15 +43,9 @@
 	<div class="wide-wrap">
 		<div class="wide-scroll">
 			<div class="wide-inner">
-				{#each pages as p}
+				{#each imageUrls as url}
 					<div class="wide-page">
-						<MangaPagePlaceholder
-							pageNum={p}
-							{totalPages}
-							mangaTitle={manga.title}
-							{chapter}
-							style="height: 100%; aspect-ratio: 2/3;"
-						/>
+						<img class="page-img" src={proxyImage(url)} alt="" loading="lazy" />
 					</div>
 				{/each}
 				<div class="wide-end">
@@ -75,34 +64,16 @@
 
 		{#if mode === 'single'}
 			<div class="single-page">
-				<MangaPagePlaceholder
-					pageNum={page}
-					{totalPages}
-					mangaTitle={manga.title}
-					{chapter}
-					style="height: 100%;"
-				/>
+				<img class="page-img" src={proxyImage(imageUrls[page - 1])} alt="Page {page}" />
 			</div>
 		{:else}
 			<div class="double-spread">
 				<div class="spread-page">
-					<MangaPagePlaceholder
-						pageNum={page}
-						{totalPages}
-						mangaTitle={manga.title}
-						{chapter}
-						style="height: 100%;"
-					/>
+					<img class="page-img" src={proxyImage(imageUrls[page - 1])} alt="Page {page}" />
 				</div>
 				{#if page + 1 <= totalPages}
 					<div class="spread-page">
-						<MangaPagePlaceholder
-							pageNum={page + 1}
-							{totalPages}
-							mangaTitle={manga.title}
-							{chapter}
-							style="height: 100%;"
-						/>
+						<img class="page-img" src={proxyImage(imageUrls[page])} alt="Page {page + 1}" />
 					</div>
 				{/if}
 			</div>
@@ -111,6 +82,18 @@
 {/if}
 
 <style>
+	.long-img {
+		width: 100%;
+		display: block;
+	}
+
+	.page-img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		display: block;
+	}
+
 	/* Long strip */
 	.long-wrap {
 		padding-top: 70px;

@@ -20,7 +20,24 @@ export async function getChapters(slug: string): Promise<Chapter[]> {
 	return json.data.chapters.map(toChapter);
 }
 
-export async function getPages(_mangaId: string, _chapter: number): Promise<string[]> {
-	// TODO: return ordered array of image URLs from API
-	return [];
+export async function getPages(mangaSlug: string, chapterNum: number): Promise<string[]> {
+	const chapterSlug = `chapter-${chapterNum}`;
+	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, chapterSlug), { headers: MANGABATS_HEADERS });
+	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
+	const html = await res.text();
+
+	const headMatch = html.match(/<head[\s\S]*?<\/head>/i);
+	if (!headMatch) throw new Error('No <head> found in chapter page');
+	const head = headMatch[0];
+
+	const cdnsMatch = head.match(/var cdns\s*=\s*(\[[\s\S]*?\]);/);
+	const cdnBase: string = cdnsMatch
+		? (JSON.parse(cdnsMatch[1]) as string[])[0]
+		: 'https://img-r1.2xstorage.com/';
+
+	const imagesMatch = head.match(/var chapterImages\s*=\s*(\[[\s\S]*?\]);/);
+	if (!imagesMatch) throw new Error('chapterImages not found in chapter page');
+	const images: string[] = JSON.parse(imagesMatch[1]);
+
+	return images.map((img) => cdnBase + img);
 }

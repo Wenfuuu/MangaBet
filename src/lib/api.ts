@@ -12,6 +12,7 @@ export const MANGABATS_IMAGE_HEADERS = {
 export const ENDPOINTS = {
 	search: (q: string, page = 1) => `${MANGABATS_BASE}/home/search/json?searchword=${encodeURIComponent(q)}&page=${page}`,
 	chapters: (slug: string) => `${MANGABATS_BASE}/api/manga/${slug}/chapters`,
+	chapterPage: (mangaSlug: string, chapterSlug: string) => `${MANGABATS_BASE}/manga/${mangaSlug}/${chapterSlug}`,
 } as const;
 
 export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;
