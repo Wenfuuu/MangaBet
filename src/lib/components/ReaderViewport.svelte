@@ -3,6 +3,21 @@
 	import ChapterEndPanel from './ChapterEndPanel.svelte';
 	import { proxyImage } from '$lib/api';
 
+	let wideScrollEl = $state<HTMLDivElement | undefined>(undefined);
+
+	$effect(() => {
+		if (!wideScrollEl) return;
+		const el = wideScrollEl;
+		const handler = (e: WheelEvent) => {
+			if (e.deltaY !== 0) {
+				e.preventDefault();
+				el.scrollLeft += e.deltaY;
+			}
+		};
+		el.addEventListener('wheel', handler, { passive: false });
+		return () => el.removeEventListener('wheel', handler);
+	});
+
 	let {
 		mode,
 		page,
@@ -41,7 +56,7 @@
 	</div>
 {:else if mode === 'wide'}
 	<div class="wide-wrap">
-		<div class="wide-scroll">
+		<div class="wide-scroll" bind:this={wideScrollEl}>
 			<div class="wide-inner">
 				{#each imageUrls as url}
 					<div class="wide-page">
@@ -58,9 +73,9 @@
 	<!-- Single / Double -->
 	<div class="paged-wrap">
 		<!-- Click zones -->
-		<div class="zone zone-prev" role="button" tabindex="-1" aria-label="Previous page" onclick={prev} onkeydown={(e) => e.key === 'ArrowLeft' && prev()}></div>
-		<div class="zone zone-mid" role="button" tabindex="-1" aria-label="Toggle UI" onclick={toggleChrome} onkeydown={(e) => e.key === 'Enter' && toggleChrome()}></div>
-		<div class="zone zone-next" role="button" tabindex="-1" aria-label="Next page" onclick={next} onkeydown={(e) => e.key === 'ArrowRight' && next()}></div>
+		<div class="zone zone-prev" role="button" tabindex="-1" aria-label="Previous page" onclick={prev} onmousedown={(e) => e.preventDefault()} onkeydown={(e) => e.key === 'ArrowLeft' && prev()}></div>
+		<div class="zone zone-mid" role="button" tabindex="-1" aria-label="Toggle UI" onclick={toggleChrome} onmousedown={(e) => e.preventDefault()} onkeydown={(e) => e.key === 'Enter' && toggleChrome()}></div>
+		<div class="zone zone-next" role="button" tabindex="-1" aria-label="Next page" onclick={next} onmousedown={(e) => e.preventDefault()} onkeydown={(e) => e.key === 'ArrowRight' && next()}></div>
 
 		{#if mode === 'single'}
 			<div class="single-page">
@@ -195,7 +210,6 @@
 	.double-spread {
 		height: calc(100vh - 160px);
 		display: flex;
-		gap: 6px;
 	}
 
 	.spread-page {

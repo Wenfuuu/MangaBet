@@ -238,6 +238,7 @@
 		background: var(--ink-deep);
 		min-height: 100vh;
 		color: var(--text);
+		user-select: none;
 	}
 
 	.top-bar {
