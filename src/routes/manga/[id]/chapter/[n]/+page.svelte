@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { MANGA_LIBRARY, generateChapters } from '$lib/data';
-	import type { ReaderMode } from '$lib/types';
+	import type { ReaderMode, MangaSearchDTO } from '$lib/types';
 	import type { PageData } from './$types';
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
@@ -27,6 +27,12 @@
 	let mode = $state<ReaderMode>('single');
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
+	let storedManga = $state<MangaSearchDTO | null>(null);
+
+	$effect(() => {
+		const raw = localStorage.getItem(`mangabet:manga:${page.params.id}`);
+		if (raw) storedManga = JSON.parse(raw);
+	});
 
 	// Restore page from localStorage
 	$effect(() => {
@@ -107,8 +113,8 @@
 			<div class="bar-divider"></div>
 
 			<div class="title-block">
-				<div class="manga-title">{manga.title}</div>
-				<div class="chapter-sub">Chapter {currentCh.number} · {currentCh.title}</div>
+				<div class="manga-title">{storedManga?.name ?? manga.title}</div>
+				<div class="chapter-sub">Chapter {chapterNum}</div>
 			</div>
 
 			<div class="bar-spacer"></div>
@@ -160,7 +166,7 @@
 		{nextChapter}
 	/>
 
-	<!-- Bottom bar (hidden in long mode) -->
+	<!-- Bottom bar (hidden in long & wide mode) -->
 	<div
 		class="bottom-bar"
 		style="transform: {chromeVisible && mode !== 'long' && mode !== 'wide' ? 'translateY(0)' : 'translateY(100%)'};"

@@ -5,6 +5,7 @@
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import { proxyImage } from '$lib/api';
 	import type { PageData } from './$types';
+	import type { MangaSearchDTO } from '$lib/types';
 
 	let { data }: { data: PageData } = $props();
 
@@ -19,9 +20,16 @@
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
 	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
-	let thumb = $derived(page.url.searchParams.get('thumb') ?? undefined);
-	let name = $derived(page.url.searchParams.get('name') ?? manga.title);
-	let author = $derived(page.url.searchParams.get('author') ?? manga.author);
+	let storedManga = $state<MangaSearchDTO | null>(null);
+
+	$effect(() => {
+		const raw = localStorage.getItem(`mangabet:manga:${page.params.id}`);
+		if (raw) storedManga = JSON.parse(raw);
+	});
+
+	let thumb = $derived(page.url.searchParams.get('thumb') ?? storedManga?.thumb ?? undefined);
+	let name = $derived(page.url.searchParams.get('name') ?? storedManga?.name ?? manga.title);
+	let author = $derived(page.url.searchParams.get('author') ?? storedManga?.author ?? manga.author);
 </script>
 
 <div>
