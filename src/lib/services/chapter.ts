@@ -15,10 +15,31 @@ function toChapter(dto: ChapterDTO): Chapter {
 }
 
 export async function getChapters(slug: string): Promise<Chapter[]> {
-	const res = await fetch(ENDPOINTS.chapters(slug), { headers: API_BASE_HEADERS });
-	if (!res.ok) throw new Error(`Chapters fetch failed: ${res.status}`);
-	const json: ChaptersResponse = await res.json();
-	return json.data.chapters.map(toChapter);
+	const LIMIT = 50;
+
+	const first = await fetch(ENDPOINTS.chapters(slug, 0, LIMIT), { headers: API_BASE_HEADERS });
+	if (!first.ok) throw new Error(`Chapters fetch failed: ${first.status}`);
+	const firstJson: ChaptersResponse = await first.json();
+
+	const { total } = firstJson.data.pagination;
+	const chapters = firstJson.data.chapters.map(toChapter);
+
+	if (total <= LIMIT) return chapters;
+
+	const offsets = Array.from(
+		{ length: Math.ceil((total - LIMIT) / LIMIT) },
+		(_, i) => (i + 1) * LIMIT
+	);
+
+	const rest = await Promise.all(
+		offsets.map((offset) =>
+			fetch(ENDPOINTS.chapters(slug, offset, LIMIT), { headers: API_BASE_HEADERS })
+				.then((r) => { if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
+				.then((json) => json.data.chapters.map(toChapter))
+		)
+	);
+
+	return chapters.concat(rest.flat());
 }
 
 export interface ChapterPageData {
@@ -51,6 +72,6 @@ export async function getPages(mangaSlug: string, chapterSlug: string): Promise<
 	return {
 		images: images.map((img) => cdnBase + img),
 		mangaName: comicNameMatch ? comicNameMatch[1] : mangaSlug,
-		chapterTitle: chapterNameMatch ? chapterNameMatch[1] : `Chapter ${chapterNum}`,
+		chapterTitle: chapterNameMatch ? chapterNameMatch[1] : `Chapter ${chapterSlug}`,
 	};
 }
