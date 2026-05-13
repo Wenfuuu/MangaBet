@@ -22,7 +22,10 @@ export async function getMangaDetail(slug: string): Promise<MangaDetailDTO> {
 	const statusMatch = html.match(/Status\s*:\s*([^\n<]+)/);
 	const status = statusMatch ? statusMatch[1].trim() : '';
 
-	const genreMatches = [...html.matchAll(/\/genre\/[^"]+">[\s\n]*([^<\n]+)[\s\n]*<\/a>/g)];
+	const genresBlock = html.match(/<li class="genres">([\s\S]*?)<\/li>/);
+	const genreMatches = genresBlock
+		? [...genresBlock[1].matchAll(/>\s*([^<\n]+?)\s*<\/a>/g)]
+		: [];
 	const genres = genreMatches.map((m) => m[1].trim()).filter(Boolean);
 
 	const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -36,5 +39,15 @@ export async function getMangaDetail(slug: string): Promise<MangaDetailDTO> {
 		} catch {}
 	}
 
-	return { name, author, status, genres, thumb, rating };
+	const viewsMatch = html.match(/View\s*:\s*([\d,]+)/);
+	const views = viewsMatch ? parseInt(viewsMatch[1].replace(/,/g, ''), 10) : 0;
+
+	const updatedMatch = html.match(/Last updated\s*:\s*([^\n<]+)/);
+	let lastUpdated = new Date();
+	if (updatedMatch) {
+		const parsed = new Date(updatedMatch[1].trim().replace(/-/g, ' '));
+		if (!isNaN(parsed.getTime())) lastUpdated = parsed;
+	}
+
+	return { name, author, status, genres, thumb, rating, views, lastUpdated };
 }

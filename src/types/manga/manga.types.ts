@@ -29,4 +29,6 @@ export interface MangaDetailDTO {
 	genres: string[];
 	thumb: string;
 	rating: number;
+	views: number;
+	lastUpdated: Date;
 }

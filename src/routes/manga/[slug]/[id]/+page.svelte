@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { MANGA_LIBRARY, COVER_PALETTES } from '$lib/data';
+	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/data';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import { proxyImage } from '$lib/api';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	let manga = $derived(
-		MANGA_LIBRARY.find((m) => m.id === page.params.slug) ?? MANGA_LIBRARY[0]
-	);
 	let chapters = $derived(data.chapters);
 	let order = $state<'desc' | 'asc'>('desc');
 	let visible = $derived(
@@ -18,7 +15,10 @@
 			.slice()
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
-	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
+	let paletteIdx = $derived(
+		(page.params.slug ?? '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % COVER_PALETTES.length
+	);
+	let palette = $derived(COVER_PALETTES[paletteIdx]);
 
 	let slug = $derived(page.params.slug);
 	let id = $derived(page.params.id);
@@ -46,12 +46,6 @@
 
 			<!-- Info -->
 			<div class="flex-1 sm:pt-3">
-				<div class="flex items-center gap-2.5 mb-3.5">
-					<span class="font-mono text-[11px] tracking-[0.18em] uppercase {data.detail.status === 'Ongoing' ? 'text-[var(--accent)]' : 'text-[var(--text-faint)]'}">{data.detail.status}</span>
-					<span class="w-[3px] h-[3px] rounded-full bg-[var(--text-quiet)]"></span>
-					<span class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.12em]">{manga.year}</span>
-				</div>
-
 				<h1 class="font-serif text-4xl sm:text-[56px] font-semibold text-[var(--text)] m-0 tracking-[-0.025em] leading-none text-balance">{data.detail.name}</h1>
 				<div class="font-sans text-base text-[var(--text-soft)] mt-3.5">by <span class="text-[var(--text)]">{data.detail.author}</span></div>
 
@@ -70,11 +64,15 @@
 					</div>
 					<div>
 						<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.14em] uppercase mb-1">Readers</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">124K</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">{fmtViews(data.detail.views)}</div>
 					</div>
 					<div>
 						<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.14em] uppercase mb-1">Updated</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">2d ago</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">{fmtDate(new Date(data.detail.lastUpdated))}</div>
+					</div>
+					<div>
+						<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.14em] uppercase mb-1">Status</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium {data.detail.status === 'Ongoing' ? 'text-[var(--accent)]' : 'text-[var(--text)]'}">{data.detail.status}</div>
 					</div>
 				</div>
 
@@ -83,10 +81,6 @@
 						<span class="px-3 py-1 bg-[rgba(107,67,36,0.2)] border border-[rgba(201,163,122,0.2)] rounded-full font-sans text-xs text-[var(--accent)]">{g}</span>
 					{/each}
 				</div>
-
-				{#if manga.summary}
-					<p class="font-sans text-[15px] text-[var(--text-muted)] leading-[1.7] mt-6 mb-8 max-w-[640px]">{manga.summary}</p>
-				{/if}
 
 				<div class="flex flex-wrap gap-3 items-center mt-6">
 					<button
