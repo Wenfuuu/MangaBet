@@ -11,17 +11,16 @@
 		const items: ContinueItem[] = [];
 		for (let i = 0; i < localStorage.length; i++) {
 			const key = localStorage.key(i);
-			const match = key?.match(/^mangabet:reader:(.+):(\d+)$/);
-			if (match) {
-				const [, slug, ch] = match;
-				const raw = localStorage.getItem(`mangabet:manga:${slug}`);
-				if (!raw) continue;
-				const manga: MangaSearchDTO = JSON.parse(raw);
-				const p = parseInt(localStorage.getItem(key!) ?? '1', 10) || 1;
-				items.push({ manga, chapter: parseInt(ch, 10), page: p });
-			}
+			const match = key?.match(/^mangabet:reader:(.+)$/);
+			if (!match) continue;
+			const slug = match[1];
+			const raw = localStorage.getItem(`mangabet:manga:${slug}`);
+			if (!raw) continue;
+			const manga: MangaSearchDTO = JSON.parse(raw);
+			const chapterSlug = localStorage.getItem(key!) ?? '';
+			if (!chapterSlug) continue;
+			items.push({ manga, chapterSlug });
 		}
-		items.sort((a, b) => b.chapter - a.chapter);
 		continueItems = items.slice(0, 3);
 	});
 </script>
@@ -48,9 +47,8 @@
 				{#each continueItems as item}
 					<ContinueCard
 						manga={item.manga}
-						chapter={item.chapter}
-						page={item.page}
-						onclick={() => goto(mangaDetailUrl(item.manga))}
+						chapterSlug={item.chapterSlug}
+						onclick={() => goto(`${mangaDetailUrl(item.manga)}/chapter/${item.chapterSlug}`)}
 					/>
 				{/each}
 			</div>

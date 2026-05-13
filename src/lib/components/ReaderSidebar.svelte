@@ -146,7 +146,7 @@
 						class:current={c.number === currentCh.number}
 						onclick={() => {
 							onclose();
-							goto(`/manga/${mangaSlug}/${mangaId}/chapter/${c.number}`);
+							goto(`/manga/${mangaSlug}/${mangaId}/chapter/${c.slug}`);
 						}}
 					>
 						<span class="chapter-num" class:current-num={c.number === currentCh.number}>

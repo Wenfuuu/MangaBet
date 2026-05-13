@@ -4,10 +4,9 @@
 
 	let {
 		manga,
-		chapter,
-		page,
+		chapterSlug,
 		onclick,
-	}: { manga: MangaSearchDTO; chapter: number; page: number; onclick: () => void } = $props();
+	}: { manga: MangaSearchDTO; chapterSlug: string; onclick: () => void } = $props();
 </script>
 
 <button
@@ -20,7 +19,7 @@
 	<div class="flex-1 flex flex-col justify-between min-w-0">
 		<div>
 			<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.12em] uppercase mb-1">
-				Chapter {chapter} · Page {page}
+				Chapter {chapterSlug.replace('-', '.')}
 			</div>
 			<div class="font-serif text-[17px] font-medium text-[var(--text)] leading-[1.2] mb-1.5 truncate">{manga.name}</div>
 			<div class="font-sans text-xs text-[var(--text-faint)]">{manga.author}</div>

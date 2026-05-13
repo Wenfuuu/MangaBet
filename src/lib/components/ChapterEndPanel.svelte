@@ -20,7 +20,7 @@
 		{#if nextChapter}
 			<button
 				class="px-5 py-3 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-md font-sans text-[13px] font-semibold cursor-pointer"
-				onclick={() => goto(`/manga/${mangaSlug}/${mangaId}/chapter/${nextChapter!.number}`)}
+				onclick={() => goto(`/manga/${mangaSlug}/${mangaId}/chapter/${nextChapter!.slug}`)}
 			>
 				Next chapter →
 			</button>

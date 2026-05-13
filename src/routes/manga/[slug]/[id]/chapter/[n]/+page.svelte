@@ -8,14 +8,15 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let chapterNum = $derived(parseInt(page.params.n ?? '1', 10));
+	let chapterSlugParam = $derived(page.params.n ?? '');
 	let allChapters = $derived(data.chapters);
 	let currentCh = $derived(
-		allChapters.find((c) => c.number === chapterNum) ?? allChapters[allChapters.length - 1]
+		allChapters.find((c) => c.slug === chapterSlugParam) ?? allChapters[allChapters.length - 1]
 	);
+	let chapterNum = $derived(currentCh?.number ?? 0);
 	let totalPages = $derived(data.pages.length);
 
-	let chapterIdx = $derived(allChapters.findIndex((c) => c.number === chapterNum));
+	let chapterIdx = $derived(allChapters.findIndex((c) => c.slug === chapterSlugParam));
 	let prevChapter = $derived(allChapters[chapterIdx + 1]);
 	let nextChapter = $derived(allChapters[chapterIdx - 1]);
 
@@ -24,16 +25,9 @@
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
 
-	// Restore page from localStorage
+	// Track last-read chapter per manga
 	$effect(() => {
-		const key = `mangabet:reader:${mangaSlug}:${chapterNum}`;
-		const saved = parseInt(localStorage.getItem(key) ?? '1', 10);
-		currentPage = saved > 0 && saved <= totalPages ? saved : 1;
-	});
-
-	// Persist page to localStorage
-	$effect(() => {
-		localStorage.setItem(`mangabet:reader:${mangaSlug}:${chapterNum}`, String(currentPage));
+		localStorage.setItem(`mangabet:reader:${mangaSlug}`, chapterSlugParam);
 	});
 
 	// Restore reader mode from localStorage

@@ -1,5 +1,6 @@
 export interface Chapter {
 	number: number;
+	slug: string;
 	title: string;
 	pages?: number;
 	date: Date;

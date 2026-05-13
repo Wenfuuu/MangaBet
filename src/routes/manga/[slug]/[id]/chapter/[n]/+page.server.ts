@@ -3,7 +3,7 @@ import { getChapters, getPages } from '$lib/services/chapter';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const [pageData, chapters] = await Promise.all([
-		getPages(params.slug, parseInt(params.n, 10)),
+		getPages(params.slug, params.n),
 		getChapters(params.slug),
 	]);
 	return {

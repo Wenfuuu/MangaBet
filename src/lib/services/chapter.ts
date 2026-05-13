@@ -7,6 +7,7 @@ function toChapter(dto: ChapterDTO): Chapter {
 	const date = new Date(dto.updated_at);
 	return {
 		number: dto.chapter_num,
+		slug: dto.chapter_slug.replace(/^chapter-/, ''),
 		title: dto.chapter_name,
 		date,
 		isNew: Date.now() - date.getTime() < NEW_THRESHOLD_MS,
@@ -26,9 +27,8 @@ export interface ChapterPageData {
 	chapterTitle: string;
 }
 
-export async function getPages(mangaSlug: string, chapterNum: number): Promise<ChapterPageData> {
-	const chapterSlug = `chapter-${chapterNum}`;
-	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, chapterSlug), { headers: MANGABATS_HEADERS });
+export async function getPages(mangaSlug: string, chapterSlug: string): Promise<ChapterPageData> {
+	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: MANGABATS_HEADERS });
 	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
 	const html = await res.text();
 
