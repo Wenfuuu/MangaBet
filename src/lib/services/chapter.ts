@@ -1,5 +1,5 @@
 import type { Chapter, ChapterDTO, ChaptersResponse } from '$lib/types';
-import { ENDPOINTS, MANGABATS_HEADERS } from '$lib/api';
+import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
 
 const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -15,7 +15,7 @@ function toChapter(dto: ChapterDTO): Chapter {
 }
 
 export async function getChapters(slug: string): Promise<Chapter[]> {
-	const res = await fetch(ENDPOINTS.chapters(slug), { headers: MANGABATS_HEADERS });
+	const res = await fetch(ENDPOINTS.chapters(slug), { headers: API_BASE_HEADERS });
 	if (!res.ok) throw new Error(`Chapters fetch failed: ${res.status}`);
 	const json: ChaptersResponse = await res.json();
 	return json.data.chapters.map(toChapter);
@@ -28,7 +28,7 @@ export interface ChapterPageData {
 }
 
 export async function getPages(mangaSlug: string, chapterSlug: string): Promise<ChapterPageData> {
-	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: MANGABATS_HEADERS });
+	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: API_BASE_HEADERS });
 	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
 	const html = await res.text();
 

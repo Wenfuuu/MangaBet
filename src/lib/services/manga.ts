@@ -1,15 +1,15 @@
 import type { MangaSearchDTO, MangaDetailDTO } from '$lib/types';
-import { ENDPOINTS, MANGABATS_HEADERS } from '$lib/api';
+import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
 
 export async function searchManga(query: string, page = 1): Promise<MangaSearchDTO[]> {
 	if (!query.trim()) return [];
-	const res = await fetch(ENDPOINTS.search(query, page), { headers: MANGABATS_HEADERS });
+	const res = await fetch(ENDPOINTS.search(query, page), { headers: API_BASE_HEADERS });
 	if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 	return res.json();
 }
 
 export async function getMangaDetail(slug: string): Promise<MangaDetailDTO> {
-	const res = await fetch(ENDPOINTS.mangaDetail(slug), { headers: MANGABATS_HEADERS });
+	const res = await fetch(ENDPOINTS.mangaDetail(slug), { headers: API_BASE_HEADERS });
 	if (!res.ok) throw new Error(`Manga detail fetch failed: ${res.status}`);
 	const html = await res.text();
 

@@ -1,5 +1,5 @@
 import https from 'node:https';
-import { MANGABATS_BASE } from '$lib/api';
+import { API_BASE_URL } from '$lib/api';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -12,7 +12,7 @@ const ALLOWED_HOSTS = [
 ];
 
 const IMAGE_HEADERS = {
-	Referer: `${MANGABATS_BASE}/`,
+	Referer: `${API_BASE_URL}/`,
 	'User-Agent':
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
 	Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',

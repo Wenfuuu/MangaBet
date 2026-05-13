@@ -1,19 +1,19 @@
-export const MANGABATS_BASE = 'https://www.mangabats.com';
+export const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-export const MANGABATS_HEADERS = {
-	Referer: MANGABATS_BASE,
+export const API_BASE_HEADERS = {
+	Referer: API_BASE_URL,
 	'X-Requested-With': 'XMLHttpRequest',
 } as const;
 
-export const MANGABATS_IMAGE_HEADERS = {
-	Referer: MANGABATS_BASE,
+export const API_BASE_IMAGE_HEADERS = {
+	Referer: API_BASE_URL,
 } as const;
 
 export const ENDPOINTS = {
-	search: (q: string, page = 1) => `${MANGABATS_BASE}/home/search/json?searchword=${encodeURIComponent(q)}&page=${page}`,
-	chapters: (slug: string) => `${MANGABATS_BASE}/api/manga/${slug}/chapters`,
-	chapterPage: (mangaSlug: string, chapterSlug: string) => `${MANGABATS_BASE}/manga/${mangaSlug}/${chapterSlug}`,
-	mangaDetail: (slug: string) => `${MANGABATS_BASE}/manga/${slug}`,
+	search: (q: string, page = 1) => `${API_BASE_URL}/home/search/json?searchword=${encodeURIComponent(q)}&page=${page}`,
+	chapters: (slug: string) => `${API_BASE_URL}/api/manga/${slug}/chapters`,
+	chapterPage: (mangaSlug: string, chapterSlug: string) => `${API_BASE_URL}/manga/${mangaSlug}/${chapterSlug}`,
+	mangaDetail: (slug: string) => `${API_BASE_URL}/manga/${slug}`,
 } as const;
 
 export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;
