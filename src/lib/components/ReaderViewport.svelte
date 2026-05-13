@@ -25,10 +25,34 @@
 		};
 		window.addEventListener('keydown', keyHandler);
 
+		const scrollHandler = () => {
+			const scrollable = el.scrollWidth - el.clientWidth;
+			if (scrollable <= 0 || !onPageChange) return;
+			const p = Math.max(1, Math.min(totalPages, Math.round((el.scrollLeft / scrollable) * (totalPages - 1)) + 1));
+			onPageChange(p);
+		};
+		el.addEventListener('scroll', scrollHandler, { passive: true });
+
 		return () => {
 			el.removeEventListener('wheel', wheelHandler);
 			window.removeEventListener('keydown', keyHandler);
+			el.removeEventListener('scroll', scrollHandler);
 		};
+	});
+
+	$effect(() => {
+		if (mode !== 'long') return;
+
+		const handleScroll = () => {
+			if (!onPageChange) return;
+			const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+			if (scrollable <= 0) return;
+			const p = Math.max(1, Math.min(totalPages, Math.round((window.scrollY / scrollable) * (totalPages - 1)) + 1));
+			onPageChange(p);
+		};
+
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => window.removeEventListener('scroll', handleScroll);
 	});
 
 	let {
@@ -44,6 +68,7 @@
 		toggleChrome,
 		prevChapter,
 		nextChapter,
+		onPageChange,
 	}: {
 		mode: ReaderMode;
 		page: number;
@@ -57,6 +82,7 @@
 		toggleChrome: () => void;
 		prevChapter?: Chapter;
 		nextChapter?: Chapter;
+		onPageChange?: (page: number) => void;
 	} = $props();
 </script>
 

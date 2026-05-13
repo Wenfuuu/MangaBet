@@ -26,14 +26,14 @@
 
 	// Restore page from localStorage
 	$effect(() => {
-		const key = `mangabet:reader:${page.params.slug}:${chapterNum}`;
+		const key = `mangabet:reader:${mangaSlug}:${chapterNum}`;
 		const saved = parseInt(localStorage.getItem(key) ?? '1', 10);
 		currentPage = saved > 0 && saved <= totalPages ? saved : 1;
 	});
 
 	// Persist page to localStorage
 	$effect(() => {
-		localStorage.setItem(`mangabet:reader:${page.params.slug}:${chapterNum}`, String(currentPage));
+		localStorage.setItem(`mangabet:reader:${mangaSlug}:${chapterNum}`, String(currentPage));
 	});
 
 	// Restore reader mode from localStorage
@@ -80,7 +80,9 @@
 	});
 
 	let progressPct = $derived((currentPage / totalPages) * 100);
-	let backUrl = $derived(`/manga/${page.params.slug}/${page.params.id}`);
+	let mangaSlug = $derived(page.params.slug ?? '');
+	let mangaId = $derived(page.params.id ?? '');
+	let backUrl = $derived(`/manga/${mangaSlug}/${mangaId}`);
 </script>
 
 <div class="reader">
@@ -131,8 +133,8 @@
 		{mode}
 		page={currentPage}
 		{totalPages}
-		mangaSlug={page.params.slug}
-		mangaId={page.params.id}
+		{mangaSlug}
+		{mangaId}
 		chapter={currentCh?.number ?? chapterNum}
 		imageUrls={data.pages}
 		next={goNext}
@@ -140,6 +142,7 @@
 		toggleChrome={() => (chromeVisible = !chromeVisible)}
 		{prevChapter}
 		{nextChapter}
+		onPageChange={(p) => (currentPage = p)}
 	/>
 
 	<!-- Bottom bar (hidden in long & wide mode) -->
@@ -180,8 +183,8 @@
 	<!-- Settings sidebar -->
 	{#if sidebarOpen}
 		<ReaderSidebar
-			mangaSlug={page.params.slug}
-			mangaId={page.params.id}
+			{mangaSlug}
+			{mangaId}
 			currentCh={currentCh ?? allChapters[0]}
 			{allChapters}
 			page={currentPage}
