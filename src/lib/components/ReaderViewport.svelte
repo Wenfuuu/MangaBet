@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Chapter, Manga, ReaderMode } from '$lib/types';
+	import type { Chapter, ReaderMode } from '$lib/types';
 	import ChapterEndPanel from './ChapterEndPanel.svelte';
 	import { proxyImage } from '$lib/api';
 
@@ -35,7 +35,8 @@
 		mode,
 		page,
 		totalPages,
-		manga,
+		mangaSlug,
+		mangaId,
 		chapter,
 		imageUrls,
 		next,
@@ -47,7 +48,8 @@
 		mode: ReaderMode;
 		page: number;
 		totalPages: number;
-		manga: Manga;
+		mangaSlug: string;
+		mangaId: string;
 		chapter: number;
 		imageUrls: string[];
 		next: () => void;
@@ -64,7 +66,7 @@
 			{#each imageUrls as url}
 				<img class="long-img" src={proxyImage(url)} alt="" loading="lazy" />
 			{/each}
-			<ChapterEndPanel {manga} {nextChapter} />
+			<ChapterEndPanel {mangaSlug} {mangaId} {nextChapter} />
 		</div>
 	</div>
 {:else if mode === 'wide'}
@@ -77,7 +79,7 @@
 					</div>
 				{/each}
 				<div class="wide-end">
-					<ChapterEndPanel {manga} {nextChapter} />
+					<ChapterEndPanel {mangaSlug} {mangaId} {nextChapter} />
 				</div>
 			</div>
 		</div>

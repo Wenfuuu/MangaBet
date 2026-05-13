@@ -20,7 +20,13 @@ export async function getChapters(slug: string): Promise<Chapter[]> {
 	return json.data.chapters.map(toChapter);
 }
 
-export async function getPages(mangaSlug: string, chapterNum: number): Promise<string[]> {
+export interface ChapterPageData {
+	images: string[];
+	mangaName: string;
+	chapterTitle: string;
+}
+
+export async function getPages(mangaSlug: string, chapterNum: number): Promise<ChapterPageData> {
 	const chapterSlug = `chapter-${chapterNum}`;
 	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, chapterSlug), { headers: MANGABATS_HEADERS });
 	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
@@ -39,5 +45,12 @@ export async function getPages(mangaSlug: string, chapterNum: number): Promise<s
 	if (!imagesMatch) throw new Error('chapterImages not found in chapter page');
 	const images: string[] = JSON.parse(imagesMatch[1]);
 
-	return images.map((img) => cdnBase + img);
+	const comicNameMatch = head.match(/var comic_name\s*=\s*"([^"]+)"/);
+	const chapterNameMatch = head.match(/var chapter_name\s*=\s*"([^"]+)"/);
+
+	return {
+		images: images.map((img) => cdnBase + img),
+		mangaName: comicNameMatch ? comicNameMatch[1] : mangaSlug,
+		chapterTitle: chapterNameMatch ? chapterNameMatch[1] : `Chapter ${chapterNum}`,
+	};
 }

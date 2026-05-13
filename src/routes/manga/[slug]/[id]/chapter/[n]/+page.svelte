@@ -1,19 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { MANGA_LIBRARY, generateChapters } from '$lib/utils';
-	import type { ReaderMode } from '$lib/types';
 	import type { PageData } from './$types';
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
+	import type { ReaderMode } from '$lib/types';
 
 	let { data }: { data: PageData } = $props();
 
-	let manga = $derived(
-		MANGA_LIBRARY.find((m) => m.id === page.params.slug) ?? MANGA_LIBRARY[0]
-	);
 	let chapterNum = $derived(parseInt(page.params.n ?? '1', 10));
-	let allChapters = $derived(generateChapters(manga.chapters));
+	let allChapters = $derived(data.chapters);
 	let currentCh = $derived(
 		allChapters.find((c) => c.number === chapterNum) ?? allChapters[allChapters.length - 1]
 	);
@@ -101,8 +97,8 @@
 			<div class="bar-divider"></div>
 
 			<div class="title-block">
-				<div class="manga-title">{data.detail.name}</div>
-				<div class="chapter-sub">Chapter {chapterNum}</div>
+				<div class="manga-title">{data.mangaName}</div>
+				<div class="chapter-sub">{data.chapterTitle}</div>
 			</div>
 
 			<div class="bar-spacer"></div>
@@ -135,8 +131,9 @@
 		{mode}
 		page={currentPage}
 		{totalPages}
-		{manga}
-		chapter={currentCh.number}
+		mangaSlug={page.params.slug}
+		mangaId={page.params.id}
+		chapter={currentCh?.number ?? chapterNum}
 		imageUrls={data.pages}
 		next={goNext}
 		prev={goPrev}
@@ -183,10 +180,9 @@
 	<!-- Settings sidebar -->
 	{#if sidebarOpen}
 		<ReaderSidebar
-			{manga}
 			mangaSlug={page.params.slug}
 			mangaId={page.params.id}
-			currentCh={currentCh}
+			currentCh={currentCh ?? allChapters[0]}
 			{allChapters}
 			page={currentPage}
 			setPage={(p) => (currentPage = p)}

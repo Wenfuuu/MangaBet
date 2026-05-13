@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { Chapter, Manga, ReaderMode } from '$lib/types';
+	import type { Chapter, ReaderMode } from '$lib/types';
 	import { goto } from '$app/navigation';
 
 	let {
-		manga,
 		mangaSlug,
 		mangaId,
 		currentCh,
@@ -15,7 +14,6 @@
 		setMode,
 		onclose,
 	}: {
-		manga: Manga;
 		mangaSlug: string;
 		mangaId: string;
 		currentCh: Chapter;

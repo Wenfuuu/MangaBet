@@ -1,11 +1,15 @@
 import type { PageServerLoad } from './$types';
-import { getMangaDetail } from '$lib/services/manga';
-import { getPages } from '$lib/services/chapter';
+import { getChapters, getPages } from '$lib/services/chapter';
 
 export const load: PageServerLoad = async ({ params }) => {
-	const [detail, pages] = await Promise.all([
-		getMangaDetail(params.slug),
+	const [pageData, chapters] = await Promise.all([
 		getPages(params.slug, parseInt(params.n, 10)),
+		getChapters(params.slug),
 	]);
-	return { detail, pages };
+	return {
+		pages: pageData.images,
+		mangaName: pageData.mangaName,
+		chapterTitle: pageData.chapterTitle,
+		chapters,
+	};
 };
