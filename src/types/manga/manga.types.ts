@@ -21,3 +21,12 @@ export interface MangaSearchDTO {
 	thumb: string;
 	slug: string;
 }
+
+export interface MangaDetailDTO {
+	name: string;
+	author: string;
+	status: string;
+	genres: string[];
+	thumb: string;
+	rating: number;
+}

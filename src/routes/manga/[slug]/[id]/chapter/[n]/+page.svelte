@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { MANGA_LIBRARY, generateChapters } from '$lib/data';
-	import type { ReaderMode, MangaSearchDTO } from '$lib/types';
+	import type { ReaderMode } from '$lib/types';
 	import type { PageData } from './$types';
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
@@ -10,7 +10,7 @@
 	let { data }: { data: PageData } = $props();
 
 	let manga = $derived(
-		MANGA_LIBRARY.find((m) => m.id === page.params.id) ?? MANGA_LIBRARY[0]
+		MANGA_LIBRARY.find((m) => m.id === page.params.slug) ?? MANGA_LIBRARY[0]
 	);
 	let chapterNum = $derived(parseInt(page.params.n ?? '1', 10));
 	let allChapters = $derived(generateChapters(manga.chapters));
@@ -27,23 +27,17 @@
 	let mode = $state<ReaderMode>('single');
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
-	let storedManga = $state<MangaSearchDTO | null>(null);
-
-	$effect(() => {
-		const raw = localStorage.getItem(`mangabet:manga:${page.params.id}`);
-		if (raw) storedManga = JSON.parse(raw);
-	});
 
 	// Restore page from localStorage
 	$effect(() => {
-		const key = `mangabet:reader:${page.params.id}:${chapterNum}`;
+		const key = `mangabet:reader:${page.params.slug}:${chapterNum}`;
 		const saved = parseInt(localStorage.getItem(key) ?? '1', 10);
 		currentPage = saved > 0 && saved <= totalPages ? saved : 1;
 	});
 
 	// Persist page to localStorage
 	$effect(() => {
-		localStorage.setItem(`mangabet:reader:${page.params.id}:${chapterNum}`, String(currentPage));
+		localStorage.setItem(`mangabet:reader:${page.params.slug}:${chapterNum}`, String(currentPage));
 	});
 
 	// Restore reader mode from localStorage
@@ -90,21 +84,15 @@
 	});
 
 	let progressPct = $derived((currentPage / totalPages) * 100);
+	let backUrl = $derived(`/manga/${page.params.slug}/${page.params.id}`);
 </script>
 
 <div class="reader">
 	<!-- Top bar -->
 	<div class="top-bar" style="transform: {chromeVisible ? 'translateY(0)' : 'translateY(-100%)'};">
 		<div class="bar-inner">
-			<button class="back-btn" onclick={() => goto(`/manga/${page.params.id}`)}>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-				>
+			<button class="back-btn" onclick={() => goto(backUrl)}>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="15 18 9 12 15 6" />
 				</svg>
 				Back
@@ -113,7 +101,7 @@
 			<div class="bar-divider"></div>
 
 			<div class="title-block">
-				<div class="manga-title">{storedManga?.name ?? manga.title}</div>
+				<div class="manga-title">{data.detail.name}</div>
 				<div class="chapter-sub">Chapter {chapterNum}</div>
 			</div>
 
@@ -133,18 +121,9 @@
 				class:active={sidebarOpen}
 				onclick={() => (sidebarOpen = !sidebarOpen)}
 			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-				>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<circle cx="12" cy="12" r="3" />
-					<path
-						d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-					/>
+					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
 				</svg>
 				Settings
 			</button>
@@ -172,19 +151,8 @@
 		style="transform: {chromeVisible && mode !== 'long' && mode !== 'wide' ? 'translateY(0)' : 'translateY(100%)'};"
 	>
 		<div class="bar-inner">
-			<button
-				class="nav-btn"
-				disabled={currentPage === 1}
-				onclick={goPrev}
-			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-				>
+			<button class="nav-btn" disabled={currentPage === 1} onclick={goPrev}>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="15 18 9 12 15 6" />
 				</svg>
 				Previous
@@ -203,20 +171,9 @@
 				<span class="slider-num right">{totalPages}</span>
 			</div>
 
-			<button
-				class="nav-btn"
-				disabled={currentPage >= totalPages}
-				onclick={goNext}
-			>
+			<button class="nav-btn" disabled={currentPage >= totalPages} onclick={goNext}>
 				Next
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-				>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="9 18 15 12 9 6" />
 				</svg>
 			</button>
@@ -227,7 +184,8 @@
 	{#if sidebarOpen}
 		<ReaderSidebar
 			{manga}
-			mangaSlug={page.params.id}
+			mangaSlug={page.params.slug}
+			mangaId={page.params.id}
 			currentCh={currentCh}
 			{allChapters}
 			page={currentPage}
@@ -297,9 +255,7 @@
 		flex-shrink: 0;
 	}
 
-	.back-btn:hover {
-		color: var(--text);
-	}
+	.back-btn:hover { color: var(--text); }
 
 	.bar-divider {
 		width: 1px;
@@ -308,9 +264,7 @@
 		flex-shrink: 0;
 	}
 
-	.title-block {
-		min-width: 0;
-	}
+	.title-block { min-width: 0; }
 
 	.manga-title {
 		font-family: 'Source Serif 4', serif;
@@ -329,9 +283,7 @@
 		margin-top: 1px;
 	}
 
-	.bar-spacer {
-		flex: 1;
-	}
+	.bar-spacer { flex: 1; }
 
 	.progress-info {
 		display: flex;

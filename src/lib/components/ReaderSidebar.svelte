@@ -5,6 +5,7 @@
 	let {
 		manga,
 		mangaSlug,
+		mangaId,
 		currentCh,
 		allChapters,
 		page,
@@ -16,6 +17,7 @@
 	}: {
 		manga: Manga;
 		mangaSlug: string;
+		mangaId: string;
 		currentCh: Chapter;
 		allChapters: Chapter[];
 		page: number;
@@ -146,7 +148,7 @@
 						class:current={c.number === currentCh.number}
 						onclick={() => {
 							onclose();
-							goto(`/manga/${mangaSlug}/chapter/${c.number}`);
+							goto(`/manga/${mangaSlug}/${mangaId}/chapter/${c.number}`);
 						}}
 					>
 						<span class="chapter-num" class:current-num={c.number === currentCh.number}>

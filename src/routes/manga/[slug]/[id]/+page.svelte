@@ -5,12 +5,11 @@
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import { proxyImage } from '$lib/api';
 	import type { PageData } from './$types';
-	import type { MangaSearchDTO } from '$lib/types';
 
 	let { data }: { data: PageData } = $props();
 
 	let manga = $derived(
-		MANGA_LIBRARY.find((m) => m.id === page.params.id) ?? MANGA_LIBRARY[0]
+		MANGA_LIBRARY.find((m) => m.id === page.params.slug) ?? MANGA_LIBRARY[0]
 	);
 	let chapters = $derived(data.chapters);
 	let order = $state<'desc' | 'asc'>('desc');
@@ -20,16 +19,10 @@
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
 	let palette = $derived(COVER_PALETTES[manga.cover % COVER_PALETTES.length]);
-	let storedManga = $state<MangaSearchDTO | null>(null);
 
-	$effect(() => {
-		const raw = localStorage.getItem(`mangabet:manga:${page.params.id}`);
-		if (raw) storedManga = JSON.parse(raw);
-	});
-
-	let thumb = $derived(page.url.searchParams.get('thumb') ?? storedManga?.thumb ?? undefined);
-	let name = $derived(page.url.searchParams.get('name') ?? storedManga?.name ?? manga.title);
-	let author = $derived(page.url.searchParams.get('author') ?? storedManga?.author ?? manga.author);
+	let slug = $derived(page.params.slug);
+	let id = $derived(page.params.id);
+	let chapterUrl = (n: number) => `/manga/${slug}/${id}/chapter/${n}`;
 </script>
 
 <div>
@@ -44,8 +37,8 @@
 		<div class="relative max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 sm:pt-14 pb-10 sm:pb-12 flex flex-col sm:flex-row gap-8 sm:gap-12">
 			<!-- Cover -->
 			<div class="w-40 sm:w-[280px] self-center sm:self-start shrink-0 rounded-md shadow-[0_30px_80px_rgba(0,0,0,0.5)] overflow-hidden" style="aspect-ratio: 2/3;">
-				{#if thumb}
-					<img class="w-full h-full object-cover" src={proxyImage(thumb)} alt={name} />
+				{#if data.detail.thumb}
+					<img class="w-full h-full object-cover" src={proxyImage(data.detail.thumb)} alt={data.detail.name} />
 				{:else}
 					<div class="w-full h-full" style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"></div>
 				{/if}
@@ -54,13 +47,13 @@
 			<!-- Info -->
 			<div class="flex-1 sm:pt-3">
 				<div class="flex items-center gap-2.5 mb-3.5">
-					<span class="font-mono text-[11px] tracking-[0.18em] uppercase {manga.status === 'Ongoing' ? 'text-[var(--accent)]' : 'text-[var(--text-faint)]'}">{manga.status}</span>
+					<span class="font-mono text-[11px] tracking-[0.18em] uppercase {data.detail.status === 'Ongoing' ? 'text-[var(--accent)]' : 'text-[var(--text-faint)]'}">{data.detail.status}</span>
 					<span class="w-[3px] h-[3px] rounded-full bg-[var(--text-quiet)]"></span>
 					<span class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.12em]">{manga.year}</span>
 				</div>
 
-				<h1 class="font-serif text-4xl sm:text-[56px] font-semibold text-[var(--text)] m-0 tracking-[-0.025em] leading-none text-balance">{name}</h1>
-				<div class="font-sans text-base text-[var(--text-soft)] mt-3.5">by <span class="text-[var(--text)]">{author}</span></div>
+				<h1 class="font-serif text-4xl sm:text-[56px] font-semibold text-[var(--text)] m-0 tracking-[-0.025em] leading-none text-balance">{data.detail.name}</h1>
+				<div class="font-sans text-base text-[var(--text-soft)] mt-3.5">by <span class="text-[var(--text)]">{data.detail.author}</span></div>
 
 				<div class="flex flex-wrap gap-6 sm:gap-8 mt-7">
 					<div>
@@ -68,7 +61,7 @@
 						<div class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)]">
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="#c9a37a" class="inline align-middle mr-1">
 								<path d="M12 2l3 7 7 .6-5.3 4.7L18 22l-6-3.7L6 22l1.3-7.7L2 9.6 9 9z" />
-							</svg>{manga.rating}
+							</svg>{data.detail.rating}
 						</div>
 					</div>
 					<div>
@@ -86,7 +79,7 @@
 				</div>
 
 				<div class="flex flex-wrap gap-2 mt-6">
-					{#each manga.genres as g}
+					{#each data.detail.genres as g}
 						<span class="px-3 py-1 bg-[rgba(107,67,36,0.2)] border border-[rgba(201,163,122,0.2)] rounded-full font-sans text-xs text-[var(--accent)]">{g}</span>
 					{/each}
 				</div>
@@ -98,7 +91,7 @@
 				<div class="flex flex-wrap gap-3 items-center mt-6">
 					<button
 						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
-						onclick={() => goto(`/manga/${page.params.id}/chapter/1`)}
+						onclick={() => goto(chapterUrl(1))}
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 							<polygon points="5,3 19,12 5,21" />
@@ -107,7 +100,7 @@
 					</button>
 					<button
 						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium cursor-pointer"
-						onclick={() => goto(`/manga/${page.params.id}/chapter/${chapters[0]?.number ?? 1}`)}
+						onclick={() => goto(chapterUrl(chapters[0]?.number ?? 1))}
 					>Latest chapter</button>
 					<button
 						class="inline-flex items-center justify-center px-4 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg cursor-pointer"
@@ -158,7 +151,7 @@
 				<ChapterRow
 					{ch}
 					isLast={i === visible.length - 1}
-					onclick={() => goto(`/manga/${page.params.id}/chapter/${ch.number}`)}
+					onclick={() => goto(chapterUrl(ch.number))}
 				/>
 			{/each}
 		</div>

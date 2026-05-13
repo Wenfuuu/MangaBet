@@ -1,4 +1,4 @@
-import type { MangaSearchDTO } from '$lib/types';
+import type { MangaSearchDTO, MangaDetailDTO } from '$lib/types';
 import { ENDPOINTS, MANGABATS_HEADERS } from '$lib/api';
 
 export async function searchManga(query: string, page = 1): Promise<MangaSearchDTO[]> {
@@ -6,4 +6,35 @@ export async function searchManga(query: string, page = 1): Promise<MangaSearchD
 	const res = await fetch(ENDPOINTS.search(query, page), { headers: MANGABATS_HEADERS });
 	if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 	return res.json();
+}
+
+export async function getMangaDetail(slug: string): Promise<MangaDetailDTO> {
+	const res = await fetch(ENDPOINTS.mangaDetail(slug), { headers: MANGABATS_HEADERS });
+	if (!res.ok) throw new Error(`Manga detail fetch failed: ${res.status}`);
+	const html = await res.text();
+
+	const nameMatch = html.match(/<div class="manga-info-content"[\s\S]*?<h1>([\s\S]*?)<\/h1>/);
+	const name = nameMatch ? nameMatch[1].trim() : slug;
+
+	const authorMatch = html.match(/Author\(s\)\s*:\s*([^\n<]+)/);
+	const author = authorMatch ? authorMatch[1].trim() : 'Unknown';
+
+	const statusMatch = html.match(/Status\s*:\s*([^\n<]+)/);
+	const status = statusMatch ? statusMatch[1].trim() : '';
+
+	const genreMatches = [...html.matchAll(/\/genre\/[^"]+">[\s\n]*([^<\n]+)[\s\n]*<\/a>/g)];
+	const genres = genreMatches.map((m) => m[1].trim()).filter(Boolean);
+
+	const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+	let thumb = '';
+	let rating = 0;
+	if (jsonLdMatch) {
+		try {
+			const ld = JSON.parse(jsonLdMatch[1]);
+			thumb = ld.itemReviewed?.image ?? '';
+			rating = parseFloat(ld.ratingValue ?? '0');
+		} catch {}
+	}
+
+	return { name, author, status, genres, thumb, rating };
 }
