@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/data';
+	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import { proxyImage } from '$lib/api';
 	import type { PageData } from './$types';

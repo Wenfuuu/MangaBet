@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { MANGA_LIBRARY, generateChapters } from '$lib/data';
+	import { MANGA_LIBRARY, generateChapters } from '$lib/utils';
 	import type { ReaderMode } from '$lib/types';
 	import type { PageData } from './$types';
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';

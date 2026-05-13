@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Chapter } from '$lib/types';
-	import { fmtDate } from '$lib/data';
+	import { fmtDate } from '$lib/utils';
 
 	let { ch, isLast = false, onclick }: { ch: Chapter; isLast?: boolean; onclick: () => void } =
 		$props();
