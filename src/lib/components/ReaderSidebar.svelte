@@ -27,9 +27,9 @@
 	} = $props();
 
 	const modes: { id: ReaderMode; label: string; desc: string }[] = [
+		{ id: 'long', label: 'Long strip', desc: 'Vertical scroll, webtoon style' },
 		{ id: 'single', label: 'Single page', desc: 'One page at a time' },
 		{ id: 'double', label: 'Double page', desc: 'Spread, two pages side-by-side' },
-		{ id: 'long', label: 'Long strip', desc: 'Vertical scroll, webtoon style' },
 		{ id: 'wide', label: 'Wide strip', desc: 'Horizontal scroll, two pages side-by-side' },
 	];
 

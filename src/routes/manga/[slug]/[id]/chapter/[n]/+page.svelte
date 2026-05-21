@@ -21,7 +21,7 @@
 	let nextChapter = $derived(allChapters[chapterIdx - 1]);
 
 	let currentPage = $state(1);
-	let mode = $state<ReaderMode>('single');
+	let mode = $state<ReaderMode>('long');
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
 
