@@ -17,6 +17,7 @@ export const ENDPOINTS = {
 	captcha: () => `${API_BASE_URL}/captcha`,
 	login: () => `${API_BASE_URL}/login`,
 	userChangesInfo: () => `${API_BASE_URL}/user_changes_info`,
+	bookmark: (page = 1) => `${API_BASE_URL}/bookmark${page > 1 ? `?page=${page}` : ''}`,
 } as const;
 
 export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;

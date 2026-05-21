@@ -1,17 +1,9 @@
 import type { UserProfile } from '$lib/types';
 import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
+import { decodeHtmlEntities } from './htmlEntities';
 
 function withCookie(cookieHeader?: string): HeadersInit {
 	return cookieHeader ? { ...API_BASE_HEADERS, Cookie: cookieHeader } : API_BASE_HEADERS;
-}
-
-function decodeHtmlEntities(s: string): string {
-	return s
-		.replace(/&amp;/g, '&')
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>')
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'");
 }
 
 function extractInputValue(html: string, name: string): string {

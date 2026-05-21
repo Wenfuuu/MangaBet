@@ -46,7 +46,9 @@
 			? 'home'
 			: page.url.pathname.startsWith('/search')
 				? 'browse'
-				: ''
+				: page.url.pathname.startsWith('/bookmark')
+					? 'bookmarks'
+					: ''
 	);
 
 	function submitSearch(e?: SubmitEvent) {
@@ -104,6 +106,12 @@
 				class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
 				onclick={() => goto('/search')}
 			>Browse</button>
+			{#if isLoggedIn}
+				<button
+					class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'bookmarks' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
+					onclick={() => goto('/bookmark')}
+				>Bookmarks</button>
+			{/if}
 		</nav>
 
 		<!-- Search box -->
@@ -215,6 +223,12 @@
 				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
 				onclick={() => { menuOpen = false; goto('/search'); }}
 			>Browse</button>
+			{#if isLoggedIn}
+				<button
+					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'bookmarks' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+					onclick={() => { menuOpen = false; goto('/bookmark'); }}
+				>Bookmarks</button>
+			{/if}
 			{#if isLoggedIn}
 				<button
 					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
