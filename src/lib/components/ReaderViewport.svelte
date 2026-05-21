@@ -244,17 +244,21 @@
 	}
 
 	.single-page {
-		height: calc(100vh - 160px);
+		max-height: calc(100vh - 160px);
+		max-width: 100%;
 		aspect-ratio: 2 / 3;
 	}
 
 	.double-spread {
-		height: calc(100vh - 160px);
+		max-height: calc(100vh - 160px);
+		max-width: 100%;
+		aspect-ratio: 4 / 3;
 		display: flex;
 	}
 
 	.spread-page {
 		height: 100%;
-		aspect-ratio: 2 / 3;
+		flex: 1;
+		min-width: 0;
 	}
 </style>

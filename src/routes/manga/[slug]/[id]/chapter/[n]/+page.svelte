@@ -374,4 +374,78 @@
 		flex: 1;
 		accent-color: var(--accent);
 	}
+
+	@media (max-width: 640px) {
+		.bar-inner {
+			padding: 10px 12px;
+			gap: 10px;
+		}
+
+		.bottom-bar .bar-inner {
+			padding: 10px 12px;
+			gap: 8px;
+		}
+
+		.bar-divider {
+			display: none;
+		}
+
+		.progress-track {
+			display: none;
+		}
+
+		.chapter-sub {
+			display: none;
+		}
+
+		.manga-title {
+			font-size: 13px;
+		}
+
+		.page-count {
+			font-size: 11px;
+		}
+
+		.settings-btn {
+			padding: 8px 10px;
+			font-size: 0;
+			gap: 0;
+		}
+
+		.settings-btn svg {
+			width: 16px;
+			height: 16px;
+		}
+
+		.back-btn {
+			font-size: 0;
+			gap: 0;
+		}
+
+		.back-btn svg {
+			width: 16px;
+			height: 16px;
+		}
+
+		.nav-btn {
+			padding: 8px 10px;
+			font-size: 0;
+			gap: 0;
+		}
+
+		.nav-btn svg {
+			width: 16px;
+			height: 16px;
+		}
+
+		.slider-wrap {
+			padding: 0 4px;
+			gap: 8px;
+		}
+
+		.slider-num {
+			font-size: 10px;
+			min-width: 18px;
+		}
+	}
 </style>
