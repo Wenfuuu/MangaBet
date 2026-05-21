@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { enhance } from '$app/forms';
 	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import { proxyImage } from '$lib/api';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	let bookmarkOverride = $state<boolean | null>(null);
+	let isBookmarked = $derived(bookmarkOverride ?? data.isBookmarked);
+	let bookmarkPending = $state(false);
 
 	let chapters = $derived(data.chapters);
 	let order = $state<'desc' | 'asc'>('desc');
@@ -96,6 +101,33 @@
 						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium cursor-pointer"
 						onclick={() => goto(chapterUrl(chapters[0]))}
 					>Latest chapter</button>
+					{#if isBookmarked !== null}
+						<form
+							method="POST"
+							action="?/toggleBookmark"
+							use:enhance={() => {
+								bookmarkOverride = !isBookmarked;
+								bookmarkPending = true;
+								return async ({ update }) => {
+									await update({ reset: false });
+									bookmarkOverride = null;
+									bookmarkPending = false;
+								};
+							}}
+						>
+							<input type="hidden" name="action" value={isBookmarked ? 'remove' : 'add'} />
+							<button
+								type="submit"
+								disabled={bookmarkPending}
+								class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 border rounded-lg font-sans text-sm font-medium cursor-pointer transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait {isBookmarked ? 'bg-[rgba(201,163,122,0.15)] text-[var(--accent)] border-[rgba(201,163,122,0.4)]' : 'bg-[rgba(232,220,203,0.05)] text-[var(--text)] border-[rgba(232,220,203,0.15)]'}"
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2">
+									<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+								</svg>
+								{isBookmarked ? 'Bookmarked' : 'Bookmark'}
+							</button>
+						</form>
+					{/if}
 					<button
 						class="inline-flex items-center justify-center px-4 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg cursor-pointer"
 						aria-label="Share"

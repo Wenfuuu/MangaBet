@@ -1,7 +1,7 @@
-import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import { redirect, fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 import { isLoggedIn, buildUpstreamCookieHeader } from '$lib/server/mangabatsCookies';
-import { getBookmarks } from '$lib/services/bookmark';
+import { getBookmarks, setBookmark } from '$lib/services/bookmark';
 
 export const load: PageServerLoad = async ({ cookies, url }) => {
 	if (!isLoggedIn(cookies)) redirect(303, '/login');
@@ -11,4 +11,19 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	const bookmarks = await getBookmarks(page, cookieHeader);
 
 	return { bookmarks };
+};
+
+export const actions: Actions = {
+	remove: async ({ request, cookies }) => {
+		if (!isLoggedIn(cookies)) return fail(401, { error: 'Not logged in' });
+		const form = await request.formData();
+		const id = form.get('id')?.toString();
+		if (!id) return fail(400, { error: 'Missing manga id' });
+		try {
+			await setBookmark(id, 'remove', buildUpstreamCookieHeader(cookies));
+			return { removed: id };
+		} catch {
+			return fail(500, { error: 'Remove failed' });
+		}
+	},
 };

@@ -14,9 +14,9 @@ function parseChapterRef(block: string, label: 'Viewed' | 'Current'): BookmarkCh
 }
 
 function parseItem(block: string): BookmarkItem | null {
-	const bmIdMatch = block.match(/bm-it-(\d+)/);
-	if (!bmIdMatch) return null;
-	const bookmarkId = parseInt(bmIdMatch[1], 10);
+	const idMatch = block.match(/bm-it-(\d+)/);
+	if (!idMatch) return null;
+	const mangaId = parseInt(idMatch[1], 10);
 
 	const slugMatch = block.match(/\/manga\/([^/"\s]+)"/);
 	if (!slugMatch) return null;
@@ -32,7 +32,7 @@ function parseItem(block: string): BookmarkItem | null {
 	const lastUpdated = lastUpdatedMatch ? decodeHtmlEntities(lastUpdatedMatch[1].trim()) : '';
 
 	return {
-		bookmarkId,
+		mangaId,
 		mangaSlug,
 		title,
 		thumb,
@@ -40,6 +40,18 @@ function parseItem(block: string): BookmarkItem | null {
 		currentChapter: parseChapterRef(block, 'Current'),
 		lastUpdated,
 	};
+}
+
+export async function getBookmarkStatus(id: string | number, cookieHeader?: string): Promise<boolean> {
+	const res = await fetch(ENDPOINTS.mangaStatus(id), { headers: withCookie(cookieHeader) });
+	if (!res.ok) throw new Error(`Bookmark status fetch failed: ${res.status}`);
+	const json = (await res.json()) as { success?: boolean; data?: { isBookmarked?: number } };
+	return json?.data?.isBookmarked === 1;
+}
+
+export async function setBookmark(id: string | number, action: 'add' | 'remove', cookieHeader?: string): Promise<void> {
+	const res = await fetch(ENDPOINTS.bookmarkAction(id, action), { headers: withCookie(cookieHeader) });
+	if (!res.ok) throw new Error(`Bookmark ${action} failed: ${res.status}`);
 }
 
 export async function getBookmarks(page = 1, cookieHeader?: string): Promise<BookmarkPage> {

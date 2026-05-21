@@ -4,7 +4,7 @@ export interface BookmarkChapterRef {
 }
 
 export interface BookmarkItem {
-	bookmarkId: number;
+	mangaId: number;
 	mangaSlug: string;
 	title: string;
 	thumb: string;

@@ -4,6 +4,7 @@
 	import BookmarkCard from '$lib/components/BookmarkCard.svelte';
 
 	let { data }: { data: PageData } = $props();
+	let removingIds = $state(new Set<number>());
 </script>
 
 <svelte:head><title>Bookmarks · MangaBet</title></svelte:head>
@@ -27,8 +28,15 @@
 		</div>
 	{:else}
 		<div class="flex flex-col gap-3 max-w-[760px] mx-auto">
-			{#each data.bookmarks.items as b (b.bookmarkId)}
-				<BookmarkCard bookmark={b} onclick={() => goto(`/manga/${b.mangaSlug}/0`)} />
+			{#each data.bookmarks.items as b (b.mangaId)}
+				{#if !removingIds.has(b.mangaId)}
+					<BookmarkCard
+						bookmark={b}
+						onclick={() => goto(`/manga/${b.mangaSlug}/${b.mangaId}`)}
+						onRemoveStart={() => removingIds.add(b.mangaId)}
+						onRemoveError={() => removingIds.delete(b.mangaId)}
+					/>
+				{/if}
 			{/each}
 		</div>
 	{/if}
