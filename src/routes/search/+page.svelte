@@ -30,7 +30,7 @@
 			{#if data.q.trim()}
 				{data.page > 1 ? `No more results for "${data.q}".` : `No titles found for "${data.q}".`}
 			{:else}
-				Search for a manga title, author, or genre above.
+				Search for a manga title above.
 			{/if}
 		</div>
 	{:else}
