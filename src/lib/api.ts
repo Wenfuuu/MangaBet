@@ -14,6 +14,8 @@ export const ENDPOINTS = {
 	chapters: (slug: string, offset = 0, limit = 50) => `${API_BASE_URL}/api/manga/${slug}/chapters?offset=${offset}&limit=${limit}`,
 	chapterPage: (mangaSlug: string, chapterSlug: string) => `${API_BASE_URL}/manga/${mangaSlug}/${chapterSlug}`,
 	mangaDetail: (slug: string) => `${API_BASE_URL}/manga/${slug}`,
+	captcha: () => `${API_BASE_URL}/captcha`,
+	login: () => `${API_BASE_URL}/login`,
 } as const;
 
 export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;

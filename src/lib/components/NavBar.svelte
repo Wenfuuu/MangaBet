@@ -7,10 +7,20 @@
 	let query = $state('');
 	let focused = $state(false);
 	let menuOpen = $state(false);
+	let accountOpen = $state(false);
 	let inputEl: HTMLInputElement | undefined = $state(undefined);
 	let wrapEl: HTMLDivElement | undefined = $state(undefined);
+	let accountWrapEl: HTMLDivElement | undefined = $state(undefined);
 	let results = $state<MangaSearchDTO[]>([]);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
+
+	async function logout() {
+		accountOpen = false;
+		await fetch('/api/logout', { method: 'POST' });
+		location.reload();
+	}
 
 	$effect(() => {
 		const q = query;
@@ -55,6 +65,7 @@
 	$effect(() => {
 		const handler = (e: MouseEvent) => {
 			if (wrapEl && !wrapEl.contains(e.target as Node)) focused = false;
+			if (accountWrapEl && !accountWrapEl.contains(e.target as Node)) accountOpen = false;
 		};
 		document.addEventListener('mousedown', handler);
 		return () => document.removeEventListener('mousedown', handler);
@@ -144,15 +155,36 @@
 			{/if}
 		</div>
 
-		<!-- Guest pill — desktop -->
-		<div class="hidden sm:flex items-center gap-2 py-1.5 pl-2 pr-3 bg-[rgba(232,220,203,0.04)] border border-[var(--border)] rounded-full shrink-0">
-			<div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#3a2a1f] to-[#1a0f08] border border-[var(--border-strong)] grid place-items-center">
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9a37a" stroke-width="2">
-					<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-					<circle cx="12" cy="7" r="4" />
-				</svg>
-			</div>
-			<span class="font-sans text-xs text-[var(--text-soft)] tracking-[0.02em]">Guest</span>
+		<!-- Account pill — desktop -->
+		<div class="hidden sm:block relative shrink-0" bind:this={accountWrapEl}>
+			<button
+				class="flex items-center gap-2 py-1.5 pl-2 pr-3 bg-[rgba(232,220,203,0.04)] border border-[var(--border)] rounded-full cursor-pointer hover:bg-[rgba(232,220,203,0.08)] transition-colors duration-150"
+				onclick={() => (accountOpen = !accountOpen)}
+			>
+				<div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#3a2a1f] to-[#1a0f08] border border-[var(--border-strong)] grid place-items-center">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9a37a" stroke-width="2">
+						<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+						<circle cx="12" cy="7" r="4" />
+					</svg>
+				</div>
+				<span class="font-sans text-xs text-[var(--text-soft)] tracking-[0.02em]">{isLoggedIn ? 'Account' : 'Guest'}</span>
+			</button>
+
+			{#if accountOpen}
+				<div class="absolute top-[calc(100%+6px)] right-0 min-w-[140px] bg-[var(--surface)] border border-[rgba(160,130,100,0.18)] rounded-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden z-10">
+					{#if isLoggedIn}
+						<button
+							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)]"
+							onclick={logout}
+						>Logout</button>
+					{:else}
+						<button
+							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)]"
+							onclick={() => { accountOpen = false; goto('/login'); }}
+						>Login</button>
+					{/if}
+				</div>
+			{/if}
 		</div>
 
 		<!-- Hamburger — mobile -->
@@ -182,6 +214,17 @@
 				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
 				onclick={() => { menuOpen = false; goto('/search'); }}
 			>Browse</button>
+			{#if isLoggedIn}
+				<button
+					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
+					onclick={() => { menuOpen = false; logout(); }}
+				>Logout</button>
+			{:else}
+				<button
+					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
+					onclick={() => { menuOpen = false; goto('/login'); }}
+				>Login</button>
+			{/if}
 		</nav>
 	{/if}
 </header>
