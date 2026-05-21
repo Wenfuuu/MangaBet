@@ -15,6 +15,7 @@
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
+	let displayname = $derived(page.data?.user?.displayname);
 
 	async function logout() {
 		accountOpen = false;
@@ -167,7 +168,7 @@
 						<circle cx="12" cy="7" r="4" />
 					</svg>
 				</div>
-				<span class="font-sans text-xs text-[var(--text-soft)] tracking-[0.02em]">{isLoggedIn ? 'Account' : 'Guest'}</span>
+				<span class="font-sans text-xs text-[var(--text-soft)] tracking-[0.02em] truncate max-w-[140px]">{isLoggedIn ? (displayname || 'Account') : 'Guest'}</span>
 			</button>
 
 			{#if accountOpen}
