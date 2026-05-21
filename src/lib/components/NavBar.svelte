@@ -79,7 +79,6 @@
 			class="flex items-center gap-2.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
 			onclick={() => goto('/')}
 		>
-			<div class="w-7 h-7 rounded-[4px] bg-gradient-to-br from-[#6b4324] to-[#a06a3c] grid place-items-center font-serif font-bold text-[17px] text-[#1a0f08]">M</div>
 			<span class="hidden sm:block font-serif font-semibold text-xl text-[var(--text)] tracking-[-0.01em]">MangaBet</span>
 		</button>
 
