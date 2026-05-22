@@ -24,6 +24,38 @@
 	let mode = $state<ReaderMode>('long');
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
+	let chapterMenuOpen = $state(false);
+	let chapterFilter = $state('');
+	let titleWrapEl = $state<HTMLDivElement>();
+	let chapterListEl = $state<HTMLDivElement>();
+
+	let filteredChapters = $derived(
+		chapterFilter.trim()
+			? allChapters.filter((c) => {
+					const q = chapterFilter.toLowerCase();
+					return c.number.toString().includes(q) || c.title.toLowerCase().includes(q);
+				})
+			: allChapters,
+	);
+
+	$effect(() => {
+		if (!chapterMenuOpen) {
+			chapterFilter = '';
+			return;
+		}
+		requestAnimationFrame(() => {
+			chapterListEl?.querySelector('.dd-chapter-row.current')?.scrollIntoView({ block: 'center' });
+		});
+	});
+
+	$effect(() => {
+		if (!chapterMenuOpen) return;
+		const handler = (e: MouseEvent) => {
+			if (titleWrapEl && !titleWrapEl.contains(e.target as Node)) chapterMenuOpen = false;
+		};
+		document.addEventListener('mousedown', handler);
+		return () => document.removeEventListener('mousedown', handler);
+	});
 
 	// Track last-read chapter per manga
 	$effect(() => {
@@ -67,6 +99,8 @@
 				sidebarOpen = !sidebarOpen;
 			} else if (e.key === 'h' || e.key === 'H') {
 				chromeVisible = !chromeVisible;
+			} else if (e.key === 'Escape' && chapterMenuOpen) {
+				chapterMenuOpen = false;
 			}
 		};
 		window.addEventListener('keydown', handleKey);
@@ -77,6 +111,11 @@
 	let mangaSlug = $derived(page.params.slug ?? '');
 	let mangaId = $derived(page.params.id ?? '');
 	let backUrl = $derived(`/manga/${mangaSlug}/${mangaId}`);
+
+	function goToChapter(ch: { slug: string } | undefined) {
+		if (!ch) return;
+		goto(`/manga/${mangaSlug}/${mangaId}/chapter/${ch.slug}`);
+	}
 </script>
 
 <div class="reader">
@@ -92,9 +131,58 @@
 
 			<div class="bar-divider"></div>
 
-			<div class="title-block">
-				<div class="manga-title">{data.mangaName}</div>
-				<div class="chapter-sub">{data.chapterTitle}</div>
+			<div class="title-wrap" bind:this={titleWrapEl}>
+				<button
+					class="title-block"
+					class:open={chapterMenuOpen}
+					onclick={() => (chapterMenuOpen = !chapterMenuOpen)}
+					aria-expanded={chapterMenuOpen}
+					aria-haspopup="menu"
+				>
+					<div class="title-text">
+						<div class="manga-title">{data.mangaName}</div>
+						<div class="chapter-sub">{data.chapterTitle}</div>
+					</div>
+					<svg class="title-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+						<polyline points="6 9 12 15 18 9" />
+					</svg>
+				</button>
+
+				{#if chapterMenuOpen}
+					<div class="chapter-dropdown" role="menu">
+						<div class="dd-search">
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="11" cy="11" r="7" />
+								<path d="m20 20-3.5-3.5" />
+							</svg>
+							<input
+								type="text"
+								placeholder="Filter chapters…"
+								bind:value={chapterFilter}
+							/>
+							<span class="dd-count">{filteredChapters.length} / {allChapters.length}</span>
+						</div>
+						<div class="dd-list" bind:this={chapterListEl}>
+							{#each filteredChapters as c}
+								<button
+									class="dd-chapter-row"
+									class:current={c.number === chapterNum}
+									onclick={() => {
+										chapterMenuOpen = false;
+										goToChapter(c);
+									}}
+								>
+									<span class="dd-chapter-num" class:current-num={c.number === chapterNum}>
+										#{c.number.toString().padStart(3, '0')}
+									</span>
+									<span class="dd-chapter-title">{c.title}</span>
+								</button>
+							{:else}
+								<div class="dd-empty">No chapters match "{chapterFilter}"</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<div class="bar-spacer"></div>
@@ -257,7 +345,162 @@
 		flex-shrink: 0;
 	}
 
-	.title-block { min-width: 0; }
+	.title-wrap {
+		position: relative;
+		min-width: 0;
+		flex: 1 1 auto;
+		max-width: 360px;
+	}
+
+	.title-block {
+		background: rgba(232, 220, 203, 0.03);
+		border: 1px solid rgba(232, 220, 203, 0.08);
+		color: inherit;
+		padding: 4px 10px;
+		border-radius: 6px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		min-width: 0;
+		text-align: left;
+		transition: all 120ms;
+	}
+
+	.title-block:hover,
+	.title-block.open {
+		background: rgba(232, 220, 203, 0.08);
+		border-color: rgba(232, 220, 203, 0.18);
+	}
+
+	.title-text {
+		min-width: 0;
+		flex: 1;
+	}
+
+	.title-chevron {
+		color: var(--text-faint);
+		transition: transform 150ms;
+		flex-shrink: 0;
+	}
+
+	.title-block.open .title-chevron {
+		transform: rotate(180deg);
+		color: var(--text-soft);
+	}
+
+	.chapter-dropdown {
+		position: absolute;
+		top: calc(100% + 8px);
+		left: 0;
+		min-width: 300px;
+		max-width: 420px;
+		background: #0f0c0a;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		max-height: min(60vh, 480px);
+		overflow: hidden;
+	}
+
+	.dd-search {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 12px;
+		border-bottom: 1px solid var(--border-faint);
+		color: var(--text-faint);
+		flex-shrink: 0;
+	}
+
+	.dd-search input {
+		flex: 1;
+		background: transparent;
+		border: none;
+		outline: none;
+		font-family: 'Inter', sans-serif;
+		font-size: 13px;
+		color: var(--text);
+		min-width: 0;
+	}
+
+	.dd-search input::placeholder {
+		color: var(--text-faint);
+	}
+
+	.dd-count {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 10px;
+		color: var(--text-faint);
+		flex-shrink: 0;
+	}
+
+	.dd-list {
+		overflow-y: auto;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.dd-chapter-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		padding: 9px 12px;
+		background: transparent;
+		border: none;
+		border-bottom: 1px solid rgba(160, 130, 100, 0.06);
+		cursor: pointer;
+		text-align: left;
+		color: var(--text-soft);
+	}
+
+	.dd-chapter-row:last-child {
+		border-bottom: none;
+	}
+
+	.dd-chapter-row:hover {
+		background: rgba(232, 220, 203, 0.04);
+		color: var(--text);
+	}
+
+	.dd-chapter-row.current {
+		background: rgba(201, 163, 122, 0.12);
+		color: var(--text);
+	}
+
+	.dd-chapter-num {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 11px;
+		color: var(--text-quiet);
+		min-width: 36px;
+		flex-shrink: 0;
+	}
+
+	.dd-chapter-num.current-num {
+		color: var(--accent);
+	}
+
+	.dd-chapter-title {
+		flex: 1;
+		font-family: 'Inter', sans-serif;
+		font-size: 13px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.dd-empty {
+		padding: 24px 12px;
+		text-align: center;
+		font-family: 'Inter', sans-serif;
+		font-size: 13px;
+		color: var(--text-faint);
+	}
 
 	.manga-title {
 		font-family: 'Source Serif 4', serif;
@@ -446,6 +689,25 @@
 		.slider-num {
 			font-size: 10px;
 			min-width: 18px;
+		}
+
+		.title-wrap {
+			max-width: none;
+		}
+
+		.title-block {
+			padding: 4px 8px;
+			gap: 6px;
+		}
+
+		.chapter-dropdown {
+			position: fixed;
+			top: 56px;
+			left: 8px;
+			right: 8px;
+			min-width: 0;
+			max-width: none;
+			max-height: 70vh;
 		}
 	}
 </style>
