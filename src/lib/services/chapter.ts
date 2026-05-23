@@ -1,11 +1,8 @@
 import type { Chapter, ChapterDTO, ChaptersResponse } from '$lib/types';
-import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
+import { ENDPOINTS } from '$lib/api';
+import { withUpstreamAuth } from './upstreamHeaders';
 
 const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
-
-function withCookie(cookieHeader?: string): HeadersInit {
-	return cookieHeader ? { ...API_BASE_HEADERS, Cookie: cookieHeader } : API_BASE_HEADERS;
-}
 
 function toChapter(dto: ChapterDTO): Chapter {
 	const date = new Date(dto.updated_at);
@@ -21,7 +18,7 @@ function toChapter(dto: ChapterDTO): Chapter {
 export async function getChapters(slug: string, cookieHeader?: string): Promise<Chapter[]> {
 	const LIMIT = 50;
 
-	const first = await fetch(ENDPOINTS.chapters(slug, 0, LIMIT), { headers: withCookie(cookieHeader) });
+	const first = await fetch(ENDPOINTS.chapters(slug, 0, LIMIT), { headers: withUpstreamAuth(cookieHeader) });
 	if (!first.ok) throw new Error(`Chapters fetch failed: ${first.status}`);
 	const firstJson: ChaptersResponse = await first.json();
 
@@ -37,7 +34,7 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 
 	const rest = await Promise.all(
 		offsets.map((offset) =>
-			fetch(ENDPOINTS.chapters(slug, offset, LIMIT), { headers: withCookie(cookieHeader) })
+			fetch(ENDPOINTS.chapters(slug, offset, LIMIT), { headers: withUpstreamAuth(cookieHeader) })
 				.then((r) => { if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
 				.then((json) => json.data.chapters.map(toChapter))
 		)
@@ -53,7 +50,7 @@ export interface ChapterPageData {
 }
 
 export async function getPages(mangaSlug: string, chapterSlug: string, cookieHeader?: string): Promise<ChapterPageData> {
-	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: withCookie(cookieHeader) });
+	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
 	const html = await res.text();
 

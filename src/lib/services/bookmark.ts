@@ -1,10 +1,7 @@
 import type { BookmarkItem, BookmarkPage, BookmarkChapterRef } from '$lib/types';
-import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
+import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
-
-function withCookie(cookieHeader?: string): HeadersInit {
-	return cookieHeader ? { ...API_BASE_HEADERS, Cookie: cookieHeader } : API_BASE_HEADERS;
-}
+import { withUpstreamAuth } from './upstreamHeaders';
 
 function parseChapterRef(block: string, label: 'Viewed' | 'Current'): BookmarkChapterRef | null {
 	const re = new RegExp(`${label}\\s*:[\\s\\S]*?href="([^"]*\\/chapter-([^"\\/]+))"[\\s\\S]*?Chapter\\s+(\\d+(?:\\.\\d+)?)`, 'i');
@@ -43,19 +40,24 @@ function parseItem(block: string): BookmarkItem | null {
 }
 
 export async function getBookmarkStatus(id: string | number, cookieHeader?: string): Promise<boolean> {
-	const res = await fetch(ENDPOINTS.mangaStatus(id), { headers: withCookie(cookieHeader) });
+	const headers = withUpstreamAuth(cookieHeader);
+	// console.log('[getBookmarkStatus] request headers:', headers);
+	const res = await fetch(ENDPOINTS.mangaStatus(id), { headers });
 	if (!res.ok) throw new Error(`Bookmark status fetch failed: ${res.status}`);
 	const json = (await res.json()) as { success?: boolean; data?: { isBookmarked?: number } };
+	// console.log('[getBookmarkStatus]', id, 'isBookmarked=',
+	// json?.data?.isBookmarked, 'cache?', res.headers.get('cf-cache-status'),
+	// res.headers.get('age'));
 	return json?.data?.isBookmarked === 1;
 }
 
 export async function setBookmark(id: string | number, action: 'add' | 'remove', cookieHeader?: string): Promise<void> {
-	const res = await fetch(ENDPOINTS.bookmarkAction(id, action), { headers: withCookie(cookieHeader) });
+	const res = await fetch(ENDPOINTS.bookmarkAction(id, action), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Bookmark ${action} failed: ${res.status}`);
 }
 
 export async function getBookmarks(page = 1, cookieHeader?: string): Promise<BookmarkPage> {
-	const res = await fetch(ENDPOINTS.bookmark(page), { headers: withCookie(cookieHeader) });
+	const res = await fetch(ENDPOINTS.bookmark(page), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Bookmark fetch failed: ${res.status}`);
 	const html = await res.text();
 

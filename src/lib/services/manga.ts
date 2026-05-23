@@ -1,20 +1,17 @@
 import type { MangaSearchDTO, MangaDetailDTO } from '$lib/types';
-import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
+import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
-
-function withCookie(cookieHeader?: string): HeadersInit {
-	return cookieHeader ? { ...API_BASE_HEADERS, Cookie: cookieHeader } : API_BASE_HEADERS;
-}
+import { withUpstreamAuth } from './upstreamHeaders';
 
 export async function searchManga(query: string, page = 1, cookieHeader?: string): Promise<MangaSearchDTO[]> {
 	if (!query.trim()) return [];
-	const res = await fetch(ENDPOINTS.search(query, page), { headers: withCookie(cookieHeader) });
+	const res = await fetch(ENDPOINTS.search(query, page), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 	return res.json();
 }
 
 export async function getMangaDetail(slug: string, cookieHeader?: string): Promise<MangaDetailDTO> {
-	const res = await fetch(ENDPOINTS.mangaDetail(slug), { headers: withCookie(cookieHeader) });
+	const res = await fetch(ENDPOINTS.mangaDetail(slug), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Manga detail fetch failed: ${res.status}`);
 	const html = await res.text();
 
