@@ -1,5 +1,6 @@
 import type { MangaSearchDTO, MangaDetailDTO } from '$lib/types';
 import { ENDPOINTS, API_BASE_HEADERS } from '$lib/api';
+import { decodeHtmlEntities } from './htmlEntities';
 
 function withCookie(cookieHeader?: string): HeadersInit {
 	return cookieHeader ? { ...API_BASE_HEADERS, Cookie: cookieHeader } : API_BASE_HEADERS;
@@ -18,19 +19,19 @@ export async function getMangaDetail(slug: string, cookieHeader?: string): Promi
 	const html = await res.text();
 
 	const nameMatch = html.match(/<div class="manga-info-content"[\s\S]*?<h1>([\s\S]*?)<\/h1>/);
-	const name = nameMatch ? nameMatch[1].trim() : slug;
+	const name = nameMatch ? decodeHtmlEntities(nameMatch[1].trim()) : slug;
 
 	const authorMatch = html.match(/Author\(s\)\s*:\s*([^\n<]+)/);
-	const author = authorMatch ? authorMatch[1].trim() : 'Unknown';
+	const author = authorMatch ? decodeHtmlEntities(authorMatch[1].trim()) : 'Unknown';
 
 	const statusMatch = html.match(/Status\s*:\s*([^\n<]+)/);
-	const status = statusMatch ? statusMatch[1].trim() : '';
+	const status = statusMatch ? decodeHtmlEntities(statusMatch[1].trim()) : '';
 
 	const genresBlock = html.match(/<li class="genres">([\s\S]*?)<\/li>/);
 	const genreMatches = genresBlock
 		? [...genresBlock[1].matchAll(/>\s*([^<\n]+?)\s*<\/a>/g)]
 		: [];
-	const genres = genreMatches.map((m) => m[1].trim()).filter(Boolean);
+	const genres = genreMatches.map((m) => decodeHtmlEntities(m[1].trim())).filter(Boolean);
 
 	const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
 	let thumb = '';
