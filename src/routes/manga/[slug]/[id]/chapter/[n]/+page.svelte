@@ -21,6 +21,10 @@
 	let nextChapter = $derived(allChapters[chapterIdx - 1]);
 
 	let currentPage = $state(1);
+	$effect(() => {
+		chapterSlugParam;
+		currentPage = 1;
+	});
 	let mode = $state<ReaderMode>('long');
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
@@ -211,21 +215,23 @@
 	</div>
 
 	<!-- Viewport -->
-	<ReaderViewport
-		{mode}
-		page={currentPage}
-		{totalPages}
-		{mangaSlug}
-		{mangaId}
-		chapter={currentCh?.number ?? chapterNum}
-		imageUrls={data.pages}
-		next={goNext}
-		prev={goPrev}
-		toggleChrome={() => (chromeVisible = !chromeVisible)}
-		{prevChapter}
-		{nextChapter}
-		onPageChange={(p) => (currentPage = p)}
-	/>
+	{#key chapterSlugParam}
+		<ReaderViewport
+			{mode}
+			page={currentPage}
+			{totalPages}
+			{mangaSlug}
+			{mangaId}
+			chapter={currentCh?.number ?? chapterNum}
+			imageUrls={data.pages}
+			next={goNext}
+			prev={goPrev}
+			toggleChrome={() => (chromeVisible = !chromeVisible)}
+			{prevChapter}
+			{nextChapter}
+			onPageChange={(p) => (currentPage = p)}
+		/>
+	{/key}
 
 	<!-- Bottom bar (hidden in long & wide mode) -->
 	<div
