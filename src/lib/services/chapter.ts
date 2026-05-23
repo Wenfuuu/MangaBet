@@ -70,8 +70,9 @@ export async function getPages(mangaSlug: string, chapterSlug: string, cookieHea
 	const comicNameMatch = head.match(/var comic_name\s*=\s*"([^"]+)"/);
 	const chapterNameMatch = head.match(/var chapter_name\s*=\s*"([^"]+)"/);
 
+	const base = cdnBase.replace(/\/+$/, '') + '/';
 	return {
-		images: images.map((img) => cdnBase + img),
+		images: images.map((img) => base + img.replace(/^\/+/, '')),
 		mangaName: comicNameMatch ? comicNameMatch[1] : mangaSlug,
 		chapterTitle: chapterNameMatch ? chapterNameMatch[1] : `Chapter ${chapterSlug}`,
 	};
