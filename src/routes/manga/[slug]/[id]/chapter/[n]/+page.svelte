@@ -173,7 +173,7 @@
 									}}
 								>
 									<span class="dd-chapter-num" class:current-num={c.number === chapterNum}>
-										#{c.number.toString().padStart(3, '0')}
+										#{c.number}
 									</span>
 									<span class="dd-chapter-title">{c.title}</span>
 								</button>

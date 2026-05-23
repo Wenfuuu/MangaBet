@@ -150,7 +150,7 @@
 						}}
 					>
 						<span class="chapter-num" class:current-num={c.number === currentCh.number}>
-							#{c.number.toString().padStart(3, '0')}
+							#{c.number}
 						</span>
 						<span class="chapter-title">{c.title}</span>
 					</button>
