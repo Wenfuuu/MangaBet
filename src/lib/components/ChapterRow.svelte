@@ -13,7 +13,7 @@
 	{onclick}
 >
 	<div class="w-12 shrink-0 font-mono text-xs font-medium text-[var(--accent)]">
-		#{ch.number.toString().padStart(3, '0')}
+		#{ch.number}
 	</div>
 	<div class="flex-1 min-w-0">
 		<div class="font-serif text-base font-medium text-[var(--text)] leading-[1.3]">{ch.title}</div>
