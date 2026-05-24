@@ -27,18 +27,20 @@
 			{data.bookmarks.page > 1 ? 'No bookmarks on this page.' : 'No bookmarks yet.'}
 		</div>
 	{:else}
-		<div class="flex flex-col gap-3 max-w-[760px] mx-auto">
-			{#each data.bookmarks.items as b (b.mangaId)}
-				{#if !removingIds.has(b.mangaId)}
-					<BookmarkCard
-						bookmark={b}
-						onclick={() => goto(`/manga/${b.mangaSlug}/${b.mangaId}`)}
-						onRemoveStart={() => removingIds.add(b.mangaId)}
-						onRemoveError={() => removingIds.delete(b.mangaId)}
-					/>
-				{/if}
-			{/each}
-		</div>
+		{#key data.bookmarks.page}
+			<div class="flex flex-col gap-3 max-w-[760px] mx-auto">
+				{#each data.bookmarks.items as b (b.mangaId)}
+					{#if !removingIds.has(b.mangaId)}
+						<BookmarkCard
+							bookmark={b}
+							onclick={() => goto(`/manga/${b.mangaSlug}/${b.mangaId}`)}
+							onRemoveStart={() => removingIds.add(b.mangaId)}
+							onRemoveError={() => removingIds.delete(b.mangaId)}
+						/>
+					{/if}
+				{/each}
+			</div>
+		{/key}
 	{/if}
 
 	{#if data.bookmarks.totalPages > 1}
