@@ -21,6 +21,7 @@ export const ENDPOINTS = {
 	mangaStatus: (id: string | number) => `${API_BASE_URL}/manga/status/${id}`,
 	bookmarkAction: (id: string | number, action: 'add' | 'remove') =>
 		`${API_BASE_URL}/action/bookmark/${id}?action=${action}`,
+	addHistory: () => `${API_BASE_URL}/action/add-history`,
 } as const;
 
 export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;

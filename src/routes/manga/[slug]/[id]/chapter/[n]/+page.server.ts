@@ -12,6 +12,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 		pages: pageData.images,
 		mangaName: pageData.mangaName,
 		chapterTitle: pageData.chapterTitle,
+		chapterId: pageData.chapterId,
 		chapters,
 	};
 };

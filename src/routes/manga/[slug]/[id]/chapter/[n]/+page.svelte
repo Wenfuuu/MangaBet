@@ -25,6 +25,23 @@
 		chapterSlugParam;
 		currentPage = 1;
 	});
+
+	let lastSavedChapterId: number | null = null;
+	$effect(() => {
+		if (!data.chapterId || !mangaId) return;
+		if (totalPages === 0 || currentPage < totalPages) return;
+		if (lastSavedChapterId === data.chapterId) return;
+
+		lastSavedChapterId = data.chapterId;
+		fetch('/api/history', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ comicId: Number(mangaId), chapterId: data.chapterId }),
+		}).catch((err) => {
+			console.warn('[save-history] failed', err);
+			lastSavedChapterId = null;
+		});
+	});
 	let mode = $state<ReaderMode>('long');
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);

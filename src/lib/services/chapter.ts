@@ -47,6 +47,7 @@ export interface ChapterPageData {
 	images: string[];
 	mangaName: string;
 	chapterTitle: string;
+	chapterId: number | null;
 }
 
 export async function getPages(mangaSlug: string, chapterSlug: string, cookieHeader?: string): Promise<ChapterPageData> {
@@ -70,10 +71,14 @@ export async function getPages(mangaSlug: string, chapterSlug: string, cookieHea
 	const comicNameMatch = head.match(/var comic_name\s*=\s*"([^"]+)"/);
 	const chapterNameMatch = head.match(/var chapter_name\s*=\s*"([^"]+)"/);
 
+	const chapterIdMatch = html.match(/const\s+chapterId\s*=\s*(\d+)/);
+	const chapterId = chapterIdMatch ? parseInt(chapterIdMatch[1], 10) : null;
+
 	const base = cdnBase.replace(/\/+$/, '') + '/';
 	return {
 		images: images.map((img) => base + img.replace(/^\/+/, '')),
 		mangaName: comicNameMatch ? comicNameMatch[1] : mangaSlug,
 		chapterTitle: chapterNameMatch ? chapterNameMatch[1] : `Chapter ${chapterSlug}`,
+		chapterId,
 	};
 }
