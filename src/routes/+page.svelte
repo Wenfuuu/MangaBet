@@ -23,6 +23,18 @@
 		}
 		continueItems = items.slice(0, 3);
 	});
+
+	function clearHistory() {
+		const keysToRemove: string[] = [];
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key && (key.startsWith('mangabet:reader:') || key.startsWith('mangabet:manga:'))) {
+				keysToRemove.push(key);
+			}
+		}
+		for (const key of keysToRemove) localStorage.removeItem(key);
+		continueItems = [];
+	}
 </script>
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-12 sm:py-16 pb-24">
@@ -35,11 +47,23 @@
 	</div>
 
 	<section>
-		<div class="mb-6 flex items-baseline justify-between">
+		<div class="mb-6 flex items-baseline justify-between gap-4">
 			<div>
 				<h2 class="font-serif text-2xl sm:text-[28px] font-semibold text-[var(--text)] m-0 tracking-[-0.015em]">Continue reading</h2>
 				<p class="font-sans text-[13px] text-[var(--text-faint)] mt-1 mb-0">Where you left off this session</p>
 			</div>
+			{#if continueItems.length > 0}
+				<button
+					onclick={clearHistory}
+					class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-[rgba(160,130,100,0.2)] rounded-md font-sans text-xs text-[var(--text-soft)] hover:text-[#e8a09b] hover:border-[rgba(180,70,60,0.35)] hover:bg-[rgba(180,70,60,0.08)] cursor-pointer shrink-0 transition-colors duration-150"
+				>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="3 6 5 6 21 6" />
+						<path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+					</svg>
+					Clear history
+				</button>
+			{/if}
 		</div>
 
 		{#if continueItems.length > 0}
