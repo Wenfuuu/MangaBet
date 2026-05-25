@@ -88,6 +88,19 @@
 				</div>
 
 				<div class="flex flex-wrap gap-3 items-center mt-6">
+						{#await data.progress then progress}
+							{#if progress}
+								<button
+									class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
+									onclick={() => goto(chapterUrl({ slug: progress.slug }))}
+								>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+										<polygon points="5,3 19,12 5,21" />
+									</svg>
+									Continue · Ch. {progress.number}
+								</button>
+							{/if}
+						{/await}
 					<button
 						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
 						onclick={() => goto(chapterUrl(chapters[chapters.length - 1]))}

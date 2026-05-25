@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { getMangaDetail } from '$lib/services/manga';
 import { getChapters } from '$lib/services/chapter';
-import { getBookmarkStatus, setBookmark } from '$lib/services/bookmark';
+import { getBookmarkStatus, setBookmark, findBookmarkProgress } from '$lib/services/bookmark';
 import { buildUpstreamCookieHeader, isLoggedIn } from '$lib/server/mangabatsCookies';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
@@ -18,7 +18,12 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 			: Promise.resolve(null),
 	]);
 
-	return { detail, chapters, isBookmarked };
+	const progress =
+		loggedIn && hasRealId && isBookmarked
+			? findBookmarkProgress(params.id, cookieHeader).catch(() => null)
+			: Promise.resolve(null);
+
+	return { detail, chapters, isBookmarked, progress };
 };
 
 export const actions: Actions = {

@@ -56,6 +56,23 @@ export async function setBookmark(id: string | number, action: 'add' | 'remove',
 	if (!res.ok) throw new Error(`Bookmark ${action} failed: ${res.status}`);
 }
 
+export async function findBookmarkProgress(
+	mangaId: string | number,
+	cookieHeader?: string,
+): Promise<BookmarkChapterRef | null> {
+	const id = Number(mangaId);
+	const first = await getBookmarks(1, cookieHeader);
+	const hit = first.items.find((it) => it.mangaId === id);
+	if (hit) return hit.viewedChapter;
+
+	for (let page = 2; page <= first.totalPages; page++) {
+		const next = await getBookmarks(page, cookieHeader);
+		const m = next.items.find((it) => it.mangaId === id);
+		if (m) return m.viewedChapter;
+	}
+	return null;
+}
+
 export async function getBookmarks(page = 1, cookieHeader?: string): Promise<BookmarkPage> {
 	const res = await fetch(ENDPOINTS.bookmark(page), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Bookmark fetch failed: ${res.status}`);
