@@ -20,6 +20,7 @@
 			.slice()
 			.sort((a, b) => (order === 'desc' ? b.number - a.number : a.number - b.number))
 	);
+	let firstChapter = $derived(chapters.slice().sort((a, b) => a.number - b.number)[0]);
 	let paletteIdx = $derived(
 		(page.params.slug ?? '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % COVER_PALETTES.length
 	);
@@ -103,12 +104,12 @@
 						{/await}
 					<button
 						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
-						onclick={() => goto(chapterUrl(chapters[chapters.length - 1]))}
+						onclick={() => goto(chapterUrl(firstChapter))}
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 							<polygon points="5,3 19,12 5,21" />
 						</svg>
-						Start from Ch. 1
+						Start from Ch. {firstChapter.number}
 					</button>
 					<button
 						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium cursor-pointer"
