@@ -1,6 +1,7 @@
 import type { Chapter, ChapterDTO, ChaptersResponse } from '$lib/types';
 import { ENDPOINTS } from '$lib/api';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { decodeHtmlEntities } from './htmlEntities';
 
 const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -77,8 +78,8 @@ export async function getPages(mangaSlug: string, chapterSlug: string, cookieHea
 	const base = cdnBase.replace(/\/+$/, '') + '/';
 	return {
 		images: images.map((img) => base + img.replace(/^\/+/, '')),
-		mangaName: comicNameMatch ? comicNameMatch[1] : mangaSlug,
-		chapterTitle: chapterNameMatch ? chapterNameMatch[1] : `Chapter ${chapterSlug}`,
+		mangaName: comicNameMatch ? decodeHtmlEntities(comicNameMatch[1]) : mangaSlug,
+		chapterTitle: chapterNameMatch ? decodeHtmlEntities(chapterNameMatch[1]) : `Chapter ${chapterSlug}`,
 		chapterId,
 	};
 }
