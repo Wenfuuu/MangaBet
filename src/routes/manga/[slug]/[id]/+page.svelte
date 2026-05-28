@@ -29,6 +29,13 @@
 	let slug = $derived(page.params.slug);
 	let id = $derived(page.params.id);
 	let chapterUrl = (ch: { slug: string }) => `/manga/${slug}/${id}/chapter/${ch.slug}`;
+
+	let copied = $state(false);
+	async function copyLink() {
+		await navigator.clipboard.writeText(page.url.href);
+		copied = true;
+		setTimeout(() => (copied = false), 1500);
+	}
 </script>
 
 <div>
@@ -144,15 +151,22 @@
 					{/if}
 					<button
 						class="inline-flex items-center justify-center px-4 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg cursor-pointer"
-						aria-label="Share"
+						aria-label={copied ? 'Link copied' : 'Copy link'}
+						onclick={copyLink}
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<circle cx="18" cy="5" r="3" />
-							<circle cx="6" cy="12" r="3" />
-							<circle cx="18" cy="19" r="3" />
-							<line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-							<line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-						</svg>
+						{#if copied}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+								<polyline points="20 6 9 17 4 12" />
+							</svg>
+						{:else}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="18" cy="5" r="3" />
+								<circle cx="6" cy="12" r="3" />
+								<circle cx="18" cy="19" r="3" />
+								<line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+								<line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+							</svg>
+						{/if}
 					</button>
 				</div>
 			</div>
