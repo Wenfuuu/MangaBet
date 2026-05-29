@@ -14,7 +14,7 @@
 	{onclick}
 >
 	<div class="w-[76px] h-[114px] shrink-0 rounded-[4px] overflow-hidden bg-[var(--surface)]">
-		<img class="w-full h-full object-cover" src={proxyImage(manga.thumb)} alt={manga.name} loading="lazy" />
+		<img class="w-full h-full object-fill" src={proxyImage(manga.thumb)} alt={manga.name} loading="lazy" />
 	</div>
 	<div class="flex-1 flex flex-col justify-between min-w-0">
 		<div>

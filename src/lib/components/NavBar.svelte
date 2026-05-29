@@ -143,7 +143,7 @@
 								navigateToManga(m);
 							}}
 						>
-							<img class="w-[38px] h-14 shrink-0 rounded-[3px] object-cover bg-[var(--surface)]" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />
+							<img class="w-[38px] h-14 shrink-0 rounded-[3px] object-fill bg-[var(--surface)]" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />
 							<div class="flex-1 min-w-0">
 								<div class="font-serif text-[15px] font-medium text-[var(--text)] truncate">{m.name}</div>
 								<div class="font-sans text-xs text-[var(--text-faint)] mt-0.5">{m.author}</div>

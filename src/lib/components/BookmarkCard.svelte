@@ -28,7 +28,7 @@
 	<button class="absolute inset-0 cursor-pointer bg-transparent border-none p-0" aria-label={bookmark.title} {onclick}></button>
 
 	<div class="w-[72px] sm:w-[88px] aspect-[2/3] shrink-0 overflow-hidden rounded-md relative bg-[var(--surface-2,rgba(11,9,8,0.5))] z-[1] pointer-events-none">
-		<img class="absolute inset-0 w-full h-full object-cover" src={proxyImage(bookmark.thumb)} alt={bookmark.title} loading="lazy" />
+		<img class="absolute inset-0 w-full h-full object-fill" src={proxyImage(bookmark.thumb)} alt={bookmark.title} loading="lazy" />
 		{#if unreadCount > 0}
 			<span class="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-[rgba(201,163,122,0.92)] text-[#1a0f08] font-mono text-[10px] font-semibold tracking-wide">
 				+{unreadCount}

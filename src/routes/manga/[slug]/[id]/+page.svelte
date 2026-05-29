@@ -51,7 +51,7 @@
 			<!-- Cover -->
 			<div class="w-40 sm:w-[280px] self-center sm:self-start shrink-0 rounded-md shadow-[0_30px_80px_rgba(0,0,0,0.5)] overflow-hidden" style="aspect-ratio: 2/3;">
 				{#if data.detail.thumb}
-					<img class="w-full h-full object-cover" src={proxyImage(data.detail.thumb)} alt={data.detail.name} />
+					<img class="w-full h-full object-fill" src={proxyImage(data.detail.thumb)} alt={data.detail.name} />
 				{:else}
 					<div class="w-full h-full" style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"></div>
 				{/if}
