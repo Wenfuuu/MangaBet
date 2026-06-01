@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { mangaDetailUrl } from '$lib/api';
+	import { mangaDetailUrl, getReaderIndex } from '$lib/api';
 	import ContinueCard from '$lib/components/ContinueCard.svelte';
 	import type { ContinueItem } from '$lib/types';
 	import type { MangaSearchDTO } from '$lib/types';
@@ -8,19 +8,22 @@
 	let continueItems = $state<ContinueItem[]>([]);
 
 	$effect(() => {
+		const idx = getReaderIndex();
 		const items: ContinueItem[] = [];
 		for (let i = 0; i < localStorage.length; i++) {
 			const key = localStorage.key(i);
 			const match = key?.match(/^mangabet:reader:(.+)$/);
 			if (!match) continue;
 			const slug = match[1];
+			if (slug === 'index' || slug === 'mode') continue;
 			const raw = localStorage.getItem(`mangabet:manga:${slug}`);
 			if (!raw) continue;
 			const manga: MangaSearchDTO = JSON.parse(raw);
 			const chapterSlug = localStorage.getItem(key!) ?? '';
 			if (!chapterSlug) continue;
-			items.push({ manga, chapterSlug });
+			items.push({ manga, chapterSlug, readAt: idx[slug] ?? 0 });
 		}
+		items.sort((a, b) => b.readAt - a.readAt);
 		continueItems = items.slice(0, 3);
 	});
 

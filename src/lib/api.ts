@@ -33,3 +33,19 @@ export function mangaDetailUrl(manga: { id: number; slug: string }): string {
 export function saveMangaDTO(manga: { id: number; slug: string; name: string; author: string; chapterLatest: string; url: string; thumb: string }): void {
 	localStorage.setItem(`mangabet:manga:${manga.slug}`, JSON.stringify(manga));
 }
+
+const READER_INDEX_KEY = 'mangabet:reader:index';
+
+export function getReaderIndex(): Record<string, number> {
+	try {
+		return JSON.parse(localStorage.getItem(READER_INDEX_KEY) ?? '{}');
+	} catch {
+		return {};
+	}
+}
+
+export function touchReaderIndex(slug: string): void {
+	const idx = getReaderIndex();
+	idx[slug] = Date.now();
+	localStorage.setItem(READER_INDEX_KEY, JSON.stringify(idx));
+}

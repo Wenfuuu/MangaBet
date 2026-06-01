@@ -5,6 +5,7 @@
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
 	import type { ReaderMode } from '$lib/types';
+	import { touchReaderIndex } from '$lib/api';
 
 	let { data }: { data: PageData } = $props();
 
@@ -81,6 +82,7 @@
 	// Track last-read chapter per manga
 	$effect(() => {
 		localStorage.setItem(`mangabet:reader:${mangaSlug}`, chapterSlugParam);
+		touchReaderIndex(mangaSlug);
 	});
 
 	// Restore reader mode from localStorage

@@ -4,7 +4,7 @@
 	import { enhance } from '$app/forms';
 	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
-	import { proxyImage } from '$lib/api';
+	import { proxyImage, saveMangaDTO } from '$lib/api';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -36,6 +36,18 @@
 		copied = true;
 		setTimeout(() => (copied = false), 1500);
 	}
+
+	$effect(() => {
+		saveMangaDTO({
+			id: Number(id),
+			slug,
+			name: data.detail.name,
+			author: data.detail.author,
+			chapterLatest: chapters[0]?.slug ?? '',
+			url: '',
+			thumb: data.detail.thumb,
+		});
+	});
 </script>
 
 <div>
