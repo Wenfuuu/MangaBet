@@ -49,3 +49,9 @@ export function touchReaderIndex(slug: string): void {
 	idx[slug] = Date.now();
 	localStorage.setItem(READER_INDEX_KEY, JSON.stringify(idx));
 }
+
+export function removeFromReaderIndex(slug: string): void {
+	const idx = getReaderIndex();
+	delete idx[slug];
+	localStorage.setItem(READER_INDEX_KEY, JSON.stringify(idx));
+}

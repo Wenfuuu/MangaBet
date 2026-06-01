@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { mangaDetailUrl, getReaderIndex } from '$lib/api';
+	import { mangaDetailUrl, getReaderIndex, removeFromReaderIndex } from '$lib/api';
 	import ContinueCard from '$lib/components/ContinueCard.svelte';
 	import type { ContinueItem } from '$lib/types';
 	import type { MangaSearchDTO } from '$lib/types';
@@ -26,6 +26,13 @@
 		items.sort((a, b) => b.readAt - a.readAt);
 		continueItems = items.slice(0, 9);
 	});
+
+	function removeItem(slug: string) {
+		localStorage.removeItem(`mangabet:reader:${slug}`);
+		localStorage.removeItem(`mangabet:manga:${slug}`);
+		removeFromReaderIndex(slug);
+		continueItems = continueItems.filter((item) => item.manga.slug !== slug);
+	}
 
 	function clearHistory() {
 		const keysToRemove: string[] = [];
@@ -76,6 +83,7 @@
 						manga={item.manga}
 						chapterSlug={item.chapterSlug}
 						onclick={() => goto(`${mangaDetailUrl(item.manga)}/chapter/${item.chapterSlug}`)}
+						onRemove={() => removeItem(item.manga.slug)}
 					/>
 				{/each}
 			</div>
