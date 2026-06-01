@@ -24,7 +24,7 @@
 			items.push({ manga, chapterSlug, readAt: idx[slug] ?? 0 });
 		}
 		items.sort((a, b) => b.readAt - a.readAt);
-		continueItems = items.slice(0, 3);
+		continueItems = items.slice(0, 9);
 	});
 
 	function clearHistory() {
