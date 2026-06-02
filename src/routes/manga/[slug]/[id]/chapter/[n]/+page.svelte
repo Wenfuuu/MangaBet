@@ -44,6 +44,7 @@
 		});
 	});
 	let mode = $state<ReaderMode>('long');
+	let mangaMode = $state(false);
 	let sidebarOpen = $state(false);
 	let chromeVisible = $state(true);
 	let chapterMenuOpen = $state(false);
@@ -91,11 +92,18 @@
 		if (saved && ['single', 'double', 'long', 'wide'].includes(saved)) {
 			mode = saved;
 		}
+		const savedManga = localStorage.getItem('mangabet:reader:mangaMode');
+		if (savedManga === 'true') mangaMode = true;
 	});
 
 	// Persist reader mode
 	$effect(() => {
 		localStorage.setItem('mangabet:reader:mode', mode);
+	});
+
+	// Persist manga mode
+	$effect(() => {
+		localStorage.setItem('mangabet:reader:mangaMode', String(mangaMode));
 	});
 
 	function goNext() {
@@ -237,6 +245,7 @@
 	{#key chapterSlugParam}
 		<ReaderViewport
 			{mode}
+			{mangaMode}
 			page={currentPage}
 			{totalPages}
 			{mangaSlug}
@@ -299,6 +308,8 @@
 			{totalPages}
 			{mode}
 			setMode={(m) => (mode = m)}
+			{mangaMode}
+			setMangaMode={(v) => (mangaMode = v)}
 			onclose={() => (sidebarOpen = false)}
 		/>
 	{/if}

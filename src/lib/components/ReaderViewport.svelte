@@ -12,7 +12,7 @@
 		const wheelHandler = (e: WheelEvent) => {
 			if (e.deltaY !== 0) {
 				e.preventDefault();
-				el.scrollLeft += e.deltaY;
+				el.scrollLeft += mangaMode ? -e.deltaY : e.deltaY;
 			}
 		};
 		el.addEventListener('wheel', wheelHandler, { passive: false });
@@ -21,14 +21,17 @@
 			if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
 			e.preventDefault();
 			const pageWidth = el.clientHeight * (2 / 3);
-			el.scrollBy({ left: e.key === 'ArrowRight' ? pageWidth : -pageWidth, behavior: 'smooth' });
+			const forward = e.key === 'ArrowRight';
+			const delta = (forward ? pageWidth : -pageWidth) * (mangaMode ? -1 : 1);
+			el.scrollBy({ left: delta, behavior: 'smooth' });
 		};
 		window.addEventListener('keydown', keyHandler);
 
 		const scrollHandler = () => {
 			const scrollable = el.scrollWidth - el.clientWidth;
 			if (scrollable <= 0 || !onPageChange) return;
-			const p = Math.max(1, Math.min(totalPages, Math.round((el.scrollLeft / scrollable) * (totalPages - 1)) + 1));
+			const ratio = mangaMode ? 1 - el.scrollLeft / scrollable : el.scrollLeft / scrollable;
+			const p = Math.max(1, Math.min(totalPages, Math.round(ratio * (totalPages - 1)) + 1));
 			onPageChange(p);
 		};
 		el.addEventListener('scroll', scrollHandler, { passive: true });
@@ -38,6 +41,18 @@
 			window.removeEventListener('keydown', keyHandler);
 			el.removeEventListener('scroll', scrollHandler);
 		};
+	});
+
+	// Snap wide-mode scroll to the correct edge when entering wide mode or toggling manga mode.
+	$effect(() => {
+		if (mode !== 'wide' || !wideScrollEl) return;
+		const el = wideScrollEl;
+		const rtl = mangaMode;
+		requestAnimationFrame(() => {
+			const scrollable = el.scrollWidth - el.clientWidth;
+			if (scrollable <= 0) return;
+			el.scrollLeft = rtl ? scrollable : 0;
+		});
 	});
 
 	$effect(() => {
@@ -57,6 +72,7 @@
 
 	let {
 		mode,
+		mangaMode = false,
 		page,
 		totalPages,
 		mangaSlug,
@@ -71,6 +87,7 @@
 		onPageChange,
 	}: {
 		mode: ReaderMode;
+		mangaMode?: boolean;
 		page: number;
 		totalPages: number;
 		mangaSlug: string;
@@ -98,7 +115,7 @@
 {:else if mode === 'wide'}
 	<div class="wide-wrap">
 		<div class="wide-scroll" bind:this={wideScrollEl}>
-			<div class="wide-inner">
+			<div class="wide-inner" class:manga={mangaMode}>
 				{#each imageUrls as url}
 					<div class="wide-page">
 						<img class="page-img" src={proxyImage(url)} alt="" loading="lazy" />
@@ -123,7 +140,7 @@
 				<img class="page-img" src={proxyImage(imageUrls[page - 1])} alt="Page {page}" />
 			</div>
 		{:else}
-			<div class="double-spread">
+			<div class="double-spread" class:manga={mangaMode}>
 				<div class="spread-page">
 					<img class="page-img" src={proxyImage(imageUrls[page - 1])} alt="Page {page}" />
 				</div>
@@ -191,6 +208,10 @@
 		width: max-content;
 	}
 
+	.wide-inner.manga {
+		flex-direction: row-reverse;
+	}
+
 	.wide-page {
 		height: 100%;
 		aspect-ratio: 2 / 3;
@@ -254,6 +275,10 @@
 		max-width: 100%;
 		aspect-ratio: 4 / 3;
 		display: flex;
+	}
+
+	.double-spread.manga {
+		flex-direction: row-reverse;
 	}
 
 	.spread-page {

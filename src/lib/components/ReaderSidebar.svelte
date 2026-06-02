@@ -12,6 +12,8 @@
 		totalPages,
 		mode,
 		setMode,
+		mangaMode,
+		setMangaMode,
 		onclose,
 	}: {
 		mangaSlug: string;
@@ -23,8 +25,12 @@
 		totalPages: number;
 		mode: ReaderMode;
 		setMode: (m: ReaderMode) => void;
+		mangaMode: boolean;
+		setMangaMode: (v: boolean) => void;
 		onclose: () => void;
 	} = $props();
+
+	let mangaModeApplies = $derived(mode === 'double' || mode === 'wide');
 
 	const modes: { id: ReaderMode; label: string; desc: string }[] = [
 		{ id: 'long', label: 'Long strip', desc: 'Vertical scroll, webtoon style' },
@@ -107,6 +113,36 @@
 					</button>
 				{/each}
 			</div>
+		</section>
+
+		<!-- Manga mode -->
+		<section class="section">
+			<div class="section-label">Manga mode</div>
+			<button
+				class="toggle-row"
+				class:active={mangaMode}
+				onclick={() => setMangaMode(!mangaMode)}
+				aria-pressed={mangaMode}
+			>
+				<div class="toggle-icon">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+						<rect x="3" y="4" width="8" height="16" rx="1" />
+						<rect x="13" y="4" width="8" height="16" rx="1" />
+						<polyline points="9 9 6 12 9 15" />
+					</svg>
+				</div>
+				<div class="toggle-info">
+					<div class="toggle-label">Right-to-left</div>
+					<div class="toggle-desc">
+						{mangaModeApplies
+							? 'Japanese-style for double & wide'
+							: 'Only affects double & wide modes'}
+					</div>
+				</div>
+				<div class="switch" class:on={mangaMode}>
+					<div class="switch-knob"></div>
+				</div>
+			</button>
 		</section>
 
 		<!-- Jump to page -->
@@ -305,6 +341,96 @@
 		font-size: 11.5px;
 		color: var(--text-faint);
 		margin-top: 2px;
+	}
+
+	.toggle-row {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 12px 14px;
+		background: transparent;
+		border: 1px solid rgba(160, 130, 100, 0.1);
+		border-radius: 8px;
+		cursor: pointer;
+		text-align: left;
+		transition: all 120ms;
+		width: 100%;
+	}
+
+	.toggle-row:hover {
+		background: rgba(201, 163, 122, 0.06);
+	}
+
+	.toggle-row.active {
+		background: rgba(201, 163, 122, 0.12);
+		border-color: rgba(201, 163, 122, 0.35);
+	}
+
+	.toggle-icon {
+		width: 36px;
+		height: 36px;
+		border-radius: 6px;
+		background: rgba(11, 9, 8, 0.6);
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		color: var(--text-faint);
+	}
+
+	.toggle-row.active .toggle-icon {
+		color: var(--accent);
+	}
+
+	.toggle-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.toggle-label {
+		font-family: 'Inter', sans-serif;
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-muted);
+	}
+
+	.toggle-row.active .toggle-label {
+		color: var(--text);
+	}
+
+	.toggle-desc {
+		font-family: 'Inter', sans-serif;
+		font-size: 11.5px;
+		color: var(--text-faint);
+		margin-top: 2px;
+	}
+
+	.switch {
+		width: 32px;
+		height: 18px;
+		border-radius: 999px;
+		background: rgba(160, 130, 100, 0.2);
+		position: relative;
+		flex-shrink: 0;
+		transition: background 150ms;
+	}
+
+	.switch.on {
+		background: var(--accent);
+	}
+
+	.switch-knob {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		background: #f5ecdd;
+		transition: transform 150ms;
+	}
+
+	.switch.on .switch-knob {
+		transform: translateX(14px);
 	}
 
 	.jump-row {
