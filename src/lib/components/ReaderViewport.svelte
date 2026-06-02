@@ -202,7 +202,7 @@
 
 	.wide-inner {
 		display: flex;
-		gap: 8px;
+		gap: 0;
 		height: 100%;
 		align-items: center;
 		width: max-content;
