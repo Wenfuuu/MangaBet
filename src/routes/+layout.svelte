@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import NavBar from '$lib/components/NavBar.svelte';
+	import LoginToast from '$lib/components/LoginToast.svelte';
 
 	let { children } = $props();
 
@@ -16,3 +17,5 @@
 {/if}
 
 {@render children()}
+
+<LoginToast />

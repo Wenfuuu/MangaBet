@@ -16,6 +16,7 @@ export const ENDPOINTS = {
 	mangaDetail: (slug: string) => `${API_BASE_URL}/manga/${slug}`,
 	captcha: () => `${API_BASE_URL}/captcha`,
 	login: () => `${API_BASE_URL}/login`,
+	register: () => `${API_BASE_URL}/register`,
 	userChangesInfo: () => `${API_BASE_URL}/user_changes_info`,
 	bookmark: (page = 1) => `${API_BASE_URL}/bookmark${page > 1 ? `?page=${page}` : ''}`,
 	mangaStatus: (id: string | number) => `${API_BASE_URL}/manga/status/${id}`,

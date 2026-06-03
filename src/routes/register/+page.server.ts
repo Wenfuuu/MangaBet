@@ -1,7 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { fetchCaptcha } from '$lib/services/auth';
-import { storeUpstreamCookies, isLoggedIn } from '$lib/server/mangabatsCookies';
+import { fetchCaptcha, register } from '$lib/services/auth';
+import {
+	buildUpstreamCookieHeader,
+	storeUpstreamCookies,
+	isLoggedIn,
+} from '$lib/server/mangabatsCookies';
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	if (isLoggedIn(cookies)) redirect(303, '/');
@@ -12,7 +16,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, cookies }) => {
 		const form = await request.formData();
 		const username = (form.get('username') ?? '').toString().trim();
 		const displayname = (form.get('displayname') ?? '').toString().trim();
@@ -21,30 +25,35 @@ export const actions: Actions = {
 		const confirmPassword = (form.get('confirmPassword') ?? '').toString();
 		const captcha = (form.get('captcha') ?? '').toString().trim();
 
+		const values = { username, displayname, email };
+
 		if (!username || !displayname || !email || !password || !confirmPassword || !captcha) {
-			return fail(400, {
-				error: 'All fields are required.',
-				username,
-				displayname,
-				email,
-			});
+			return fail(400, { ...values, error: 'All fields are required.' });
 		}
 
 		if (password !== confirmPassword) {
 			return fail(400, {
-				error: 'Passwords do not match.',
-				username,
-				displayname,
-				email,
+				...values,
+				fieldErrors: { password: 'Passwords do not match.' },
 			});
 		}
 
-		// TODO: registration implementation pending
-		return fail(501, {
-			error: 'Registration is not yet wired up.',
-			username,
-			displayname,
-			email,
-		});
+		const cookieHeader = buildUpstreamCookieHeader(cookies);
+		if (!cookieHeader.includes('captcha=')) {
+			return fail(400, { ...values, error: 'Captcha expired. Refresh and try again.' });
+		}
+
+		const result = await register(username, password, displayname, email, captcha, cookieHeader);
+		storeUpstreamCookies(result.setCookieHeaders, cookies);
+
+		if (!result.ok) {
+			return fail(result.fieldErrors ? 422 : 400, {
+				...values,
+				error: result.generalError,
+				fieldErrors: result.fieldErrors,
+			});
+		}
+
+		redirect(303, '/login?registered=1');
 	},
 };

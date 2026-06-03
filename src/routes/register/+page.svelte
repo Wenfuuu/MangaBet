@@ -8,6 +8,8 @@
 	let submitting = $state(false);
 	let refreshing = $state(false);
 
+	let fieldErrors = $derived(form?.fieldErrors ?? {});
+
 	async function refreshCaptcha() {
 		refreshing = true;
 		try {
@@ -53,7 +55,11 @@
 					value={form?.username ?? ''}
 					required
 					class="input"
+					class:input-error={fieldErrors.username}
 				/>
+				{#if fieldErrors.username}
+					<span class="field-error">{fieldErrors.username}</span>
+				{/if}
 			</label>
 
 			<label class="field">
@@ -65,7 +71,11 @@
 					value={form?.displayname ?? ''}
 					required
 					class="input"
+					class:input-error={fieldErrors.displayname}
 				/>
+				{#if fieldErrors.displayname}
+					<span class="field-error">{fieldErrors.displayname}</span>
+				{/if}
 			</label>
 
 			<label class="field">
@@ -77,7 +87,11 @@
 					value={form?.email ?? ''}
 					required
 					class="input"
+					class:input-error={fieldErrors.email}
 				/>
+				{#if fieldErrors.email}
+					<span class="field-error">{fieldErrors.email}</span>
+				{/if}
 			</label>
 
 			<label class="field">
@@ -88,7 +102,11 @@
 					autocomplete="new-password"
 					required
 					class="input"
+					class:input-error={fieldErrors.password}
 				/>
+				{#if fieldErrors.password}
+					<span class="field-error">{fieldErrors.password}</span>
+				{/if}
 			</label>
 
 			<label class="field">
@@ -130,7 +148,11 @@
 					required
 					maxlength="6"
 					class="input"
+					class:input-error={fieldErrors.captcha}
 				/>
+				{#if fieldErrors.captcha}
+					<span class="field-error">{fieldErrors.captcha}</span>
+				{/if}
 			</div>
 
 			<button type="submit" class="submit" disabled={submitting}>
@@ -229,6 +251,21 @@
 
 	.input:focus {
 		border-color: rgba(201, 163, 122, 0.5);
+	}
+
+	.input-error {
+		border-color: rgba(200, 90, 80, 0.55);
+	}
+
+	.input-error:focus {
+		border-color: rgba(200, 90, 80, 0.8);
+	}
+
+	.field-error {
+		font-family: 'Inter', sans-serif;
+		font-size: 12px;
+		color: #e8a09b;
+		margin-top: 2px;
 	}
 
 	.captcha-row {

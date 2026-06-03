@@ -10,6 +10,15 @@ export interface LoginResult {
 	setCookieHeaders: string[];
 }
 
+export type RegisterField = 'username' | 'password' | 'displayname' | 'email' | 'captcha';
+
+export interface RegisterResult {
+	ok: boolean;
+	fieldErrors?: Partial<Record<RegisterField, string>>;
+	generalError?: string;
+	setCookieHeaders: string[];
+}
+
 const BROWSER_UA =
 	'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -48,4 +57,55 @@ export async function login(
 	const setCookieHeaders = res.headers.getSetCookie?.() ?? [];
 	const ok = setCookieHeaders.some((h) => /^token=/i.test(h));
 	return { ok, setCookieHeaders };
+}
+
+export async function register(
+	username: string,
+	password: string,
+	displayname: string,
+	email: string,
+	captcha: string,
+	cookieHeader: string,
+): Promise<RegisterResult> {
+	const body = new URLSearchParams({ username, password, displayname, email, captcha });
+	const res = await fetch(ENDPOINTS.register(), {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			Accept: 'application/json',
+			Referer: `${ENDPOINTS.register()}`,
+			'User-Agent': BROWSER_UA,
+			'X-Requested-With': 'XMLHttpRequest',
+			Cookie: cookieHeader,
+		},
+		body: body.toString(),
+		redirect: 'manual',
+	});
+	const setCookieHeaders = res.headers.getSetCookie?.() ?? [];
+
+	if (res.ok) {
+		return { ok: true, setCookieHeaders };
+	}
+
+	let generalError = 'Registration failed.';
+	let fieldErrors: Partial<Record<RegisterField, string>> | undefined;
+	try {
+		const data = (await res.json()) as {
+			message?: string;
+			errors?: Record<string, string[]>;
+		};
+		if (data.message) generalError = data.message;
+		if (data.errors) {
+			fieldErrors = {};
+			const allowed: RegisterField[] = ['username', 'password', 'displayname', 'email', 'captcha'];
+			for (const key of allowed) {
+				const msg = data.errors[key]?.[0];
+				if (typeof msg === 'string') fieldErrors[key] = msg;
+			}
+		}
+	} catch {
+		// non-JSON response — fall back to generalError default
+	}
+
+	return { ok: false, fieldErrors, generalError, setCookieHeaders };
 }

@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let submitting = $state(false);
 	let refreshing = $state(false);
+	let justRegistered = $derived(page.url.searchParams.get('registered') === '1');
 
 	async function refreshCaptcha() {
 		refreshing = true;
@@ -29,6 +31,10 @@
 			<h1 class="title">Sign in</h1>
 			<p class="sub">Welcome back to MangaBet.</p>
 		</div>
+
+		{#if justRegistered && !form?.error}
+			<div class="success" role="status">Account created. Please sign in.</div>
+		{/if}
 
 		{#if form?.error}
 			<div class="error" role="alert">{form.error}</div>
@@ -154,6 +160,17 @@
 		color: #e8a09b;
 		background: rgba(180, 70, 60, 0.1);
 		border: 1px solid rgba(180, 70, 60, 0.25);
+		border-radius: 6px;
+		padding: 10px 12px;
+		margin-bottom: 16px;
+	}
+
+	.success {
+		font-family: 'Inter', sans-serif;
+		font-size: 13px;
+		color: #a8d8a8;
+		background: rgba(70, 140, 80, 0.1);
+		border: 1px solid rgba(70, 140, 80, 0.25);
 		border-radius: 6px;
 		padding: 10px 12px;
 		margin-bottom: 16px;
