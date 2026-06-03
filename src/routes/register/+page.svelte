@@ -20,14 +20,14 @@
 </script>
 
 <svelte:head>
-	<title>Sign in · MangaBet</title>
+	<title>Create account · MangaBet</title>
 </svelte:head>
 
 <div class="page">
 	<div class="card">
 		<div class="header">
-			<h1 class="title">Sign in</h1>
-			<p class="sub">Welcome back to MangaBet.</p>
+			<h1 class="title">Create account</h1>
+			<p class="sub">Join MangaBet to track and save what you read.</p>
 		</div>
 
 		{#if form?.error}
@@ -57,11 +57,46 @@
 			</label>
 
 			<label class="field">
+				<span class="label">Display name</span>
+				<input
+					name="displayname"
+					type="text"
+					autocomplete="nickname"
+					value={form?.displayname ?? ''}
+					required
+					class="input"
+				/>
+			</label>
+
+			<label class="field">
+				<span class="label">Email</span>
+				<input
+					name="email"
+					type="email"
+					autocomplete="email"
+					value={form?.email ?? ''}
+					required
+					class="input"
+				/>
+			</label>
+
+			<label class="field">
 				<span class="label">Password</span>
 				<input
 					name="password"
 					type="password"
-					autocomplete="current-password"
+					autocomplete="new-password"
+					required
+					class="input"
+				/>
+			</label>
+
+			<label class="field">
+				<span class="label">Confirm password</span>
+				<input
+					name="confirmPassword"
+					type="password"
+					autocomplete="new-password"
 					required
 					class="input"
 				/>
@@ -91,7 +126,7 @@
 					type="text"
 					inputmode="numeric"
 					autocomplete="off"
-					placeholder="Enter the 3 digits above"
+					placeholder="Enter the digits above"
 					required
 					maxlength="6"
 					class="input"
@@ -99,12 +134,12 @@
 			</div>
 
 			<button type="submit" class="submit" disabled={submitting}>
-				{submitting ? 'Signing in…' : 'Sign in'}
+				{submitting ? 'Creating account…' : 'Create account'}
 			</button>
 		</form>
 
 		<p class="alt">
-			Don't have an account? <a href="/register" class="alt-link">Register</a>
+			Already have an account? <a href="/login" class="alt-link">Sign in</a>
 		</p>
 	</div>
 </div>
@@ -120,7 +155,7 @@
 
 	.card {
 		width: 100%;
-		max-width: 380px;
+		max-width: 420px;
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: 12px;
@@ -162,7 +197,7 @@
 	form {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 14px;
 	}
 
 	.field {

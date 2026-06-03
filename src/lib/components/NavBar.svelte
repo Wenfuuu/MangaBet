@@ -191,6 +191,10 @@
 							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)]"
 							onclick={() => { accountOpen = false; goto('/login'); }}
 						>Login</button>
+						<button
+							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)] border-t border-[rgba(160,130,100,0.12)]"
+							onclick={() => { accountOpen = false; goto('/register'); }}
+						>Register</button>
 					{/if}
 				</div>
 			{/if}
@@ -239,6 +243,10 @@
 					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
 					onclick={() => { menuOpen = false; goto('/login'); }}
 				>Login</button>
+				<button
+					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
+					onclick={() => { menuOpen = false; goto('/register'); }}
+				>Register</button>
 			{/if}
 		</nav>
 	{/if}
