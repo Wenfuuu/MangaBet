@@ -135,22 +135,20 @@
 		<div class="zone zone-mid" role="button" tabindex="-1" aria-label="Toggle UI" onclick={toggleChrome} onmousedown={(e) => e.preventDefault()} onkeydown={(e) => e.key === 'Enter' && toggleChrome()}></div>
 		<div class="zone zone-next" role="button" tabindex="-1" aria-label="Next page" onclick={next} onmousedown={(e) => e.preventDefault()} onkeydown={(e) => e.key === 'ArrowRight' && next()}></div>
 
-		{#if mode === 'single'}
-			<div class="single-page">
-				<img class="page-img" src={proxyImage(imageUrls[page - 1])} alt="Page {page}" />
-			</div>
-		{:else}
-			<div class="double-spread" class:manga={mangaMode}>
-				<div class="spread-page">
-					<img class="page-img" src={proxyImage(imageUrls[page - 1])} alt="Page {page}" />
-				</div>
-				{#if page + 1 <= totalPages}
-					<div class="spread-page">
-						<img class="page-img" src={proxyImage(imageUrls[page])} alt="Page {page + 1}" />
-					</div>
-				{/if}
-			</div>
-		{/if}
+		<div
+			class:single-page={mode === 'single'}
+			class:double-spread={mode === 'double'}
+			class:manga={mode === 'double' && mangaMode}
+		>
+			{#each imageUrls as url, i}
+				<img
+					class="page-img"
+					class:active={i === page - 1 || (mode === 'double' && i === page)}
+					src={proxyImage(url)}
+					alt="Page {i + 1}"
+				/>
+			{/each}
+		</div>
 	</div>
 {/if}
 
@@ -281,8 +279,17 @@
 		flex-direction: row-reverse;
 	}
 
-	.spread-page {
-		height: 100%;
+	.single-page .page-img,
+	.double-spread .page-img {
+		display: none;
+	}
+
+	.single-page .page-img.active,
+	.double-spread .page-img.active {
+		display: block;
+	}
+
+	.double-spread .page-img {
 		flex: 1;
 		min-width: 0;
 	}
