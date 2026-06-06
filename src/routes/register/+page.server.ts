@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { fetchCaptcha, register } from '$lib/services/auth';
+import { fetchCaptcha, register, type RegisterField } from '$lib/services/auth';
 import {
 	buildUpstreamCookieHeader,
 	storeUpstreamCookies,
@@ -34,7 +34,9 @@ export const actions: Actions = {
 		if (password !== confirmPassword) {
 			return fail(400, {
 				...values,
-				fieldErrors: { password: 'Passwords do not match.' },
+				fieldErrors: { password: 'Passwords do not match.' } as Partial<
+					Record<RegisterField, string>
+				>,
 			});
 		}
 

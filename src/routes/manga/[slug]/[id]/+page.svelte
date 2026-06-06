@@ -26,8 +26,8 @@
 	);
 	let palette = $derived(COVER_PALETTES[paletteIdx]);
 
-	let slug = $derived(page.params.slug);
-	let id = $derived(page.params.id);
+	let slug = $derived(page.params.slug!);
+	let id = $derived(page.params.id!);
 	let chapterUrl = (ch: { slug: string }) => `/manga/${slug}/${id}/chapter/${ch.slug}`;
 
 	let copied = $state(false);
