@@ -52,7 +52,10 @@
 		<div class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.18em] uppercase mb-2.5">Welcome back</div>
 		<h1 class="font-serif text-4xl sm:text-5xl font-semibold text-[var(--text)] m-0 tracking-[-0.02em]">Find your next chapter.</h1>
 		<p class="font-sans text-[15px] text-[var(--text-soft)] mt-3 max-w-[560px]">
-			Search any title above to begin reading. Your place is kept on this device for the session.
+			Search any title above to begin reading.
+		</p>
+		<p class="font-sans text-[15px] text-[var(--text-soft)] mt-3 max-w-[560px]">
+			Your reading progress is saved on this device, so you can pick up where you left off.
 		</p>
 	</div>
 
@@ -60,7 +63,7 @@
 		<div class="mb-6 flex items-baseline justify-between gap-4">
 			<div>
 				<h2 class="font-serif text-2xl sm:text-[28px] font-semibold text-[var(--text)] m-0 tracking-[-0.015em]">Continue reading</h2>
-				<p class="font-sans text-[13px] text-[var(--text-faint)] mt-1 mb-0">Where you left off this session</p>
+				<p class="font-sans text-[13px] text-[var(--text-faint)] mt-1 mb-0">Where you left off</p>
 			</div>
 			{#if continueItems.length > 0}
 				<button
@@ -92,7 +95,7 @@
 				<div>
 					<h3 class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)] m-0 mb-1.5">Nothing on the shelf yet.</h3>
 					<p class="font-sans text-sm text-[var(--text-faint)] max-w-[480px] m-0">
-						Search for a title to begin reading. Your place will be saved on this device until the session ends.
+						Start reading a manga and it'll appear here so you can jump back in.
 					</p>
 				</div>
 				<button
