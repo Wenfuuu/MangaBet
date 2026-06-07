@@ -119,6 +119,11 @@
 	}
 
 	function goPrev() {
+		// go back to the previous chapter if on first page
+		if (currentPage <= 1) {
+			if (prevChapter) goToChapter(prevChapter);
+			return;
+		}
 		const step = mode === 'double' ? 2 : 1;
 		currentPage = Math.max(currentPage - step, 1);
 	}
