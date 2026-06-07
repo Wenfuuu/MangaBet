@@ -107,6 +107,13 @@
 	});
 
 	function goNext() {
+		// advance to the next chapter if on last page
+		// back to the manga detail page if this is the latest chapter
+		if (currentPage >= totalPages) {
+			if (nextChapter) goToChapter(nextChapter);
+			else goto(backUrl);
+			return;
+		}
 		const step = mode === 'double' ? 2 : 1;
 		currentPage = Math.min(currentPage + step, totalPages);
 	}
