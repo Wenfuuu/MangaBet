@@ -5,7 +5,13 @@
 	import type { ContinueItem } from '$lib/types';
 	import type { MangaSearchDTO } from '$lib/types';
 
-	let continueItems = $state<ContinueItem[]>([]);
+	const PAGE_SIZE = 9;
+
+	let allItems = $state<ContinueItem[]>([]);
+	let visibleCount = $state(PAGE_SIZE);
+
+	let continueItems = $derived(allItems.slice(0, visibleCount));
+	let hasMore = $derived(visibleCount < allItems.length);
 
 	$effect(() => {
 		const idx = getReaderIndex();
@@ -24,14 +30,18 @@
 			items.push({ manga, chapterSlug, readAt: idx[slug] ?? 0 });
 		}
 		items.sort((a, b) => b.readAt - a.readAt);
-		continueItems = items.slice(0, 9);
+		allItems = items;
 	});
+
+	function loadMore() {
+		visibleCount += PAGE_SIZE;
+	}
 
 	function removeItem(slug: string) {
 		localStorage.removeItem(`mangabet:reader:${slug}`);
 		localStorage.removeItem(`mangabet:manga:${slug}`);
 		removeFromReaderIndex(slug);
-		continueItems = continueItems.filter((item) => item.manga.slug !== slug);
+		allItems = allItems.filter((item) => item.manga.slug !== slug);
 	}
 
 	function clearHistory() {
@@ -43,7 +53,7 @@
 			}
 		}
 		for (const key of keysToRemove) localStorage.removeItem(key);
-		continueItems = [];
+		allItems = [];
 	}
 </script>
 
@@ -90,6 +100,18 @@
 					/>
 				{/each}
 			</div>
+
+			{#if hasMore}
+				<div class="mt-8 flex justify-center">
+					<button
+						onclick={loadMore}
+						class="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--surface)] border border-[rgba(160,130,100,0.2)] rounded-lg font-sans text-[13px] font-medium text-[var(--text-soft)] hover:text-[var(--text)] hover:border-[rgba(160,130,100,0.35)] cursor-pointer transition-colors duration-150"
+					>
+						Load more
+						<span class="font-mono text-[11px] text-[var(--text-faint)]">{continueItems.length} / {allItems.length}</span>
+					</button>
+				</div>
+			{/if}
 		{:else}
 			<div class="px-6 sm:px-8 py-12 bg-[var(--surface)] border border-dashed border-[rgba(160,130,100,0.18)] rounded-[10px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
 				<div>
