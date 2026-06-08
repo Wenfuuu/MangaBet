@@ -4,6 +4,7 @@
 	import { enhance } from '$app/forms';
 	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
+	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { proxyImage, saveMangaDTO } from '$lib/api';
 	import type { PageData } from './$types';
 
@@ -38,6 +39,7 @@
 	}
 
 	$effect(() => {
+		if (!data.detail) return;
 		saveMangaDTO({
 			id: Number(id),
 			slug,
@@ -50,6 +52,9 @@
 	});
 </script>
 
+{#if data.rateLimited}
+	<RateLimitNotice />
+{:else}
 <div>
 	<!-- Hero -->
 	<div class="relative border-b border-[var(--border-faint)] overflow-hidden">
@@ -223,3 +228,4 @@
 		</div>
 	</div>
 </div>
+{/if}

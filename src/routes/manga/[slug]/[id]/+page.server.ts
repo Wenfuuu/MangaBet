@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { getMangaDetail } from '$lib/services/manga';
 import { getChapters } from '$lib/services/chapter';
 import { getBookmarkStatus, setBookmark, findBookmarkProgress } from '$lib/services/bookmark';
+import { isRateLimitError } from '$lib/services/errors';
 import { buildUpstreamCookieHeader, isLoggedIn } from '$lib/server/mangabatsCookies';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
@@ -10,20 +11,33 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 	const loggedIn = isLoggedIn(cookies);
 	const hasRealId = params.id && params.id !== '0';
 
-	const [detail, chapters, isBookmarked] = await Promise.all([
-		getMangaDetail(params.slug, cookieHeader),
-		getChapters(params.slug, cookieHeader),
-		loggedIn && hasRealId
-			? getBookmarkStatus(params.id, cookieHeader).catch(() => null)
-			: Promise.resolve(null),
-	]);
+	try {
+		const [detail, chapters, isBookmarked] = await Promise.all([
+			getMangaDetail(params.slug, cookieHeader),
+			getChapters(params.slug, cookieHeader),
+			loggedIn && hasRealId
+				? getBookmarkStatus(params.id, cookieHeader).catch(() => null)
+				: Promise.resolve(null),
+		]);
 
-	const progress =
-		loggedIn && hasRealId && isBookmarked
-			? findBookmarkProgress(params.id, cookieHeader).catch(() => null)
-			: Promise.resolve(null);
+		const progress =
+			loggedIn && hasRealId && isBookmarked
+				? findBookmarkProgress(params.id, cookieHeader).catch(() => null)
+				: Promise.resolve(null);
 
-	return { detail, chapters, isBookmarked, progress };
+		return { detail, chapters, isBookmarked, progress, rateLimited: false as const };
+	} catch (err) {
+		if (isRateLimitError(err)) {
+			return {
+				detail: null,
+				chapters: [],
+				isBookmarked: null,
+				progress: Promise.resolve(null),
+				rateLimited: true as const,
+			};
+		}
+		throw err;
+	}
 };
 
 export const actions: Actions = {

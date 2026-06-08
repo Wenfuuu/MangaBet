@@ -2,6 +2,7 @@ import type { BookmarkItem, BookmarkPage, BookmarkChapterRef } from '$lib/types'
 import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { RateLimitError } from './errors';
 
 function parseChapterRef(block: string, label: 'Viewed' | 'Current'): BookmarkChapterRef | null {
 	const re = new RegExp(`${label}\\s*:[\\s\\S]*?href="([^"]*\\/chapter-([^"\\/]+))"[\\s\\S]*?Chapter\\s+(\\d+(?:\\.\\d+)?)`, 'i');
@@ -75,6 +76,7 @@ export async function findBookmarkProgress(
 
 export async function getBookmarks(page = 1, cookieHeader?: string): Promise<BookmarkPage> {
 	const res = await fetch(ENDPOINTS.bookmark(page), { headers: withUpstreamAuth(cookieHeader) });
+	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Bookmark fetch failed: ${res.status}`);
 	const html = await res.text();
 

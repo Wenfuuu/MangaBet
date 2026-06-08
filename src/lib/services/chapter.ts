@@ -2,6 +2,7 @@ import type { Chapter, ChapterDTO, ChaptersResponse } from '$lib/types';
 import { ENDPOINTS } from '$lib/api';
 import { withUpstreamAuth } from './upstreamHeaders';
 import { decodeHtmlEntities } from './htmlEntities';
+import { RateLimitError } from './errors';
 
 const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -20,6 +21,7 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 	const LIMIT = 50;
 
 	const first = await fetch(ENDPOINTS.chapters(slug, 0, LIMIT), { headers: withUpstreamAuth(cookieHeader) });
+	if (first.status === 429) throw new RateLimitError();
 	if (!first.ok) throw new Error(`Chapters fetch failed: ${first.status}`);
 	const firstJson: ChaptersResponse = await first.json();
 
@@ -36,7 +38,7 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 	const rest = await Promise.all(
 		offsets.map((offset) =>
 			fetch(ENDPOINTS.chapters(slug, offset, LIMIT), { headers: withUpstreamAuth(cookieHeader) })
-				.then((r) => { if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
+				.then((r) => { if (r.status === 429) throw new RateLimitError(); if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
 				.then((json) => json.data.chapters.map(toChapter))
 		)
 	);
@@ -53,6 +55,7 @@ export interface ChapterPageData {
 
 export async function getPages(mangaSlug: string, chapterSlug: string, cookieHeader?: string): Promise<ChapterPageData> {
 	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: withUpstreamAuth(cookieHeader) });
+	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
 	const html = await res.text();
 

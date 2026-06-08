@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import SearchResultCard from '$lib/components/SearchResultCard.svelte';
+	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { mangaDetailUrl, saveMangaDTO } from '$lib/api';
 
 	let { data }: { data: PageData } = $props();
@@ -19,13 +20,17 @@
 				The complete shelf
 			{/if}
 		</h1>
-		<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
-			{data.results.length}
-			{data.results.length === 1 ? 'title' : 'titles'} found
-		</div>
+		{#if !data.rateLimited}
+			<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
+				{data.results.length}
+				{data.results.length === 1 ? 'title' : 'titles'} found
+			</div>
+		{/if}
 	</div>
 
-	{#if data.results.length === 0}
+	{#if data.rateLimited}
+		<RateLimitNotice />
+	{:else if data.results.length === 0}
 		<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
 			{#if data.q.trim()}
 				{data.page > 1 ? `No more results for "${data.q}".` : `No titles found for "${data.q}".`}
@@ -43,7 +48,7 @@
 		{/key}
 	{/if}
 
-	{#if data.q.trim()}
+	{#if data.q.trim() && !data.rateLimited}
 		<div class="mt-12 flex items-center justify-center gap-3">
 			{#if data.page > 1}
 				<a

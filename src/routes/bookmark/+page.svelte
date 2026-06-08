@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import BookmarkCard from '$lib/components/BookmarkCard.svelte';
+	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 
 	let { data }: { data: PageData } = $props();
 	let removingIds = $state(new Set<number>());
@@ -17,12 +18,16 @@
 		<h1 class="font-serif text-3xl sm:text-[44px] font-semibold text-[var(--text)] m-0 tracking-[-0.02em]">
 			Bookmarks
 		</h1>
-		<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
-			{data.bookmarks.totalStories} {data.bookmarks.totalStories === 1 ? 'title' : 'titles'} saved
-		</div>
+		{#if !data.rateLimited}
+			<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
+				{data.bookmarks.totalStories} {data.bookmarks.totalStories === 1 ? 'title' : 'titles'} saved
+			</div>
+		{/if}
 	</div>
 
-	{#if data.bookmarks.items.length === 0}
+	{#if data.rateLimited}
+		<RateLimitNotice />
+	{:else if data.bookmarks.items.length === 0}
 		<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
 			{data.bookmarks.page > 1 ? 'No bookmarks on this page.' : 'No bookmarks yet.'}
 		</div>
@@ -43,7 +48,7 @@
 		{/key}
 	{/if}
 
-	{#if data.bookmarks.totalPages > 1}
+	{#if !data.rateLimited && data.bookmarks.totalPages > 1}
 		<div class="mt-12 flex items-center justify-center gap-3">
 			{#if data.bookmarks.page > 1}
 				<a

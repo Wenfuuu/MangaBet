@@ -5,6 +5,7 @@
 	import type { PageData } from './$types';
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
+	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import type { ReaderMode } from '$lib/types';
 	import { touchReaderIndex } from '$lib/api';
 
@@ -169,6 +170,9 @@
 	}
 </script>
 
+{#if data.rateLimited}
+	<RateLimitNotice />
+{:else}
 <div class="reader">
 	<!-- Top bar -->
 	<div class="top-bar" style="transform: {chromeVisible ? 'translateY(0)' : 'translateY(-100%)'};">
@@ -334,6 +338,7 @@
 		/>
 	{/if}
 </div>
+{/if}
 
 <style>
 	.reader {
