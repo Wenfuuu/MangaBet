@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { PageData } from './$types';
@@ -22,9 +23,13 @@
 	let nextChapter = $derived(allChapters[chapterIdx - 1]);
 
 	let currentPage = $state(1);
+	// When jumping back to the previous chapter, land on its final page instead of the first.
+	let startAtLastPage = false;
 	$effect(() => {
 		chapterSlugParam;
-		currentPage = 1;
+		// untrack totalPages so this only re-runs on chapter change, not when page count settles
+		currentPage = startAtLastPage ? untrack(() => totalPages) : 1;
+		startAtLastPage = false;
 	});
 
 	let lastSavedChapterId: number | null = null;
@@ -119,9 +124,12 @@
 	}
 
 	function goPrev() {
-		// go back to the previous chapter if on first page
+		// go back to the previous chapter if on first page, landing on its final page
 		if (currentPage <= 1) {
-			if (prevChapter) goToChapter(prevChapter);
+			if (prevChapter) {
+				startAtLastPage = true;
+				goToChapter(prevChapter);
+			}
 			return;
 		}
 		const step = mode === 'double' ? 2 : 1;
