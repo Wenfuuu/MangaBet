@@ -17,15 +17,37 @@
 		};
 		el.addEventListener('wheel', wheelHandler, { passive: false });
 
-		const keyHandler = (e: KeyboardEvent) => {
+		const SCROLL_SPEED = 36; // px per frame (~2160px/s at 60fps)
+		let scrollDir = 0;
+		let rafId = 0;
+
+		const step = () => {
+			if (scrollDir === 0) {
+				rafId = 0;
+				return;
+			}
+			el.scrollLeft += scrollDir * SCROLL_SPEED;
+			rafId = requestAnimationFrame(step);
+		};
+
+		const keyDownHandler = (e: KeyboardEvent) => {
 			if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
 			e.preventDefault();
-			const pageWidth = el.clientHeight * (2 / 3);
-			const forward = e.key === 'ArrowRight';
-			const delta = (forward ? pageWidth : -pageWidth) * (mangaMode ? -1 : 1);
-			el.scrollBy({ left: delta, behavior: 'smooth' });
+			scrollDir = e.key === 'ArrowRight' ? 1 : -1;
+			if (!rafId) rafId = requestAnimationFrame(step);
 		};
-		window.addEventListener('keydown', keyHandler);
+
+		const keyUpHandler = (e: KeyboardEvent) => {
+			if (
+				(e.key === 'ArrowRight' && scrollDir === 1) ||
+				(e.key === 'ArrowLeft' && scrollDir === -1)
+			) {
+				scrollDir = 0;
+			}
+		};
+
+		window.addEventListener('keydown', keyDownHandler);
+		window.addEventListener('keyup', keyUpHandler);
 
 		const scrollHandler = () => {
 			const scrollable = el.scrollWidth - el.clientWidth;
@@ -38,8 +60,10 @@
 
 		return () => {
 			el.removeEventListener('wheel', wheelHandler);
-			window.removeEventListener('keydown', keyHandler);
+			window.removeEventListener('keydown', keyDownHandler);
+			window.removeEventListener('keyup', keyUpHandler);
 			el.removeEventListener('scroll', scrollHandler);
+			if (rafId) cancelAnimationFrame(rafId);
 		};
 	});
 
@@ -195,7 +219,6 @@
 		overflow-x: auto;
 		overflow-y: hidden;
 		padding: 0 24px;
-		scroll-snap-type: x mandatory;
 	}
 
 	.wide-inner {
