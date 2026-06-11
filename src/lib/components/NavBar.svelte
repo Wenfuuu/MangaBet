@@ -12,7 +12,7 @@
 	let wrapEl: HTMLDivElement | undefined = $state(undefined);
 	let accountWrapEl: HTMLDivElement | undefined = $state(undefined);
 	let results = $state<MangaSearchDTO[]>([]);
-	let highlightedIndex = $state(0);
+	let highlightedIndex = $state(-1);
 	let cardRefs = $state<(HTMLButtonElement | undefined)[]>([]);
 	let footerRef = $state<HTMLButtonElement | undefined>(undefined);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -82,7 +82,7 @@
 			highlightedIndex = Math.max(highlightedIndex - 1, 0);
 		} else if (e.key === 'Enter') {
 			e.preventDefault();
-			if (highlightedIndex < results.length) {
+			if (highlightedIndex >= 0 && highlightedIndex < results.length) {
 				navigateToManga(results[highlightedIndex]);
 			} else {
 				submitSearch();
@@ -90,10 +90,10 @@
 		}
 	}
 
-	// Reset highlight to the first item whenever results change.
+	// Clear highlight whenever results change — user must press an arrow key to engage.
 	$effect(() => {
 		results;
-		highlightedIndex = 0;
+		highlightedIndex = -1;
 	});
 
 	// Keep the highlighted item scrolled into view during keyboard navigation.
