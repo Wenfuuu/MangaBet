@@ -12,6 +12,9 @@
 	let wrapEl: HTMLDivElement | undefined = $state(undefined);
 	let accountWrapEl: HTMLDivElement | undefined = $state(undefined);
 	let results = $state<MangaSearchDTO[]>([]);
+	let highlightedIndex = $state(0);
+	let cardRefs = $state<(HTMLButtonElement | undefined)[]>([]);
+	let footerRef = $state<HTMLButtonElement | undefined>(undefined);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
@@ -64,6 +67,40 @@
 		saveMangaDTO(manga);
 		goto(mangaDetailUrl(manga));
 	}
+
+	function handleKey(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			focused = false;
+			return;
+		}
+		if (results.length === 0) return;
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			highlightedIndex = Math.min(highlightedIndex + 1, results.length);
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			highlightedIndex = Math.max(highlightedIndex - 1, 0);
+		} else if (e.key === 'Enter') {
+			e.preventDefault();
+			if (highlightedIndex < results.length) {
+				navigateToManga(results[highlightedIndex]);
+			} else {
+				submitSearch();
+			}
+		}
+	}
+
+	// Reset highlight to the first item whenever results change.
+	$effect(() => {
+		results;
+		highlightedIndex = 0;
+	});
+
+	// Keep the highlighted item scrolled into view during keyboard navigation.
+	$effect(() => {
+		const el = highlightedIndex < results.length ? cardRefs[highlightedIndex] : footerRef;
+		el?.scrollIntoView({ block: 'nearest' });
+	});
 
 	$effect(() => {
 		const handler = (e: MouseEvent) => {
@@ -126,6 +163,7 @@
 						bind:this={inputEl}
 						bind:value={query}
 						onfocus={() => (focused = true)}
+						onkeydown={handleKey}
 						placeholder="Search titles…"
 						class="flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-sm text-[var(--text)] placeholder:text-[var(--text-faint)]"
 					/>
@@ -135,9 +173,11 @@
 
 			{#if focused && results.length > 0}
 				<div class="absolute top-[calc(100%+6px)] left-0 right-0 bg-[var(--surface)] border border-[rgba(160,130,100,0.18)] rounded-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-y-auto max-h-[460px] z-10">
-					{#each results as m}
+					{#each results as m, i}
 						<button
-							class="flex items-center gap-3 w-full px-3 py-2.5 bg-transparent border-none cursor-pointer text-left hover:bg-[rgba(107,67,36,0.12)] transition-colors duration-[120ms]"
+							bind:this={cardRefs[i]}
+							class="flex items-center gap-3 w-full px-3 py-2.5 border-none cursor-pointer text-left hover:bg-[rgba(107,67,36,0.12)] transition-colors duration-[120ms] {i === highlightedIndex ? 'bg-[rgba(107,67,36,0.12)]' : 'bg-transparent'}"
+							onmouseenter={() => (highlightedIndex = i)}
 							onmousedown={(e) => {
 								e.preventDefault();
 								navigateToManga(m);
@@ -152,7 +192,9 @@
 						</button>
 					{/each}
 					<button
-						class="block w-full px-3 py-3 bg-[rgba(107,67,36,0.06)] border-none border-t border-[rgba(160,130,100,0.12)] cursor-pointer font-sans text-[13px] text-[var(--accent)] text-center"
+						bind:this={footerRef}
+						class="block w-full px-3 py-3 border-none border-t border-[rgba(160,130,100,0.12)] cursor-pointer font-sans text-[13px] text-[var(--accent)] text-center {highlightedIndex === results.length ? 'bg-[rgba(107,67,36,0.12)]' : 'bg-[rgba(107,67,36,0.06)]'}"
+						onmouseenter={() => (highlightedIndex = results.length)}
 						onmousedown={(e) => {
 							e.preventDefault();
 							submitSearch();
