@@ -4,6 +4,19 @@ import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
 import { RateLimitError } from './errors';
 
+function formatLastUpdated(raw: string): string {
+	const m = raw.match(/^(\d{1,2})-(\d{1,2})\s+(\d{1,2}:\d{2})$/);
+	if (!m) return raw;
+	const mm = m[1].padStart(2, '0');
+	const dd = m[2].padStart(2, '0');
+	const time = m[3];
+	const now = new Date();
+	let year = now.getFullYear();
+	const candidate = new Date(year, parseInt(mm, 10) - 1, parseInt(dd, 10));
+	if (candidate.getTime() > now.getTime() + 24 * 60 * 60 * 1000) year -= 1;
+	return `${year}-${mm}-${dd} ${time}`;
+}
+
 function parseChapterRef(block: string, label: 'Viewed' | 'Current'): BookmarkChapterRef | null {
 	const re = new RegExp(`${label}\\s*:[\\s\\S]*?href="([^"]*\\/chapter-([^"\\/]+))"[\\s\\S]*?Chapter\\s+(\\d+(?:\\.\\d+)?)`, 'i');
 	const m = block.match(re);
@@ -27,7 +40,7 @@ function parseItem(block: string): BookmarkItem | null {
 	const title = titleMatch ? decodeHtmlEntities(titleMatch[1].trim()) : mangaSlug;
 
 	const lastUpdatedMatch = block.match(/Last updated\s*:\s*([^<]+?)\s*<\/span>/i);
-	const lastUpdated = lastUpdatedMatch ? decodeHtmlEntities(lastUpdatedMatch[1].trim()) : '';
+	const lastUpdated = lastUpdatedMatch ? formatLastUpdated(decodeHtmlEntities(lastUpdatedMatch[1].trim())) : '';
 
 	return {
 		mangaId,
