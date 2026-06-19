@@ -22,6 +22,15 @@ export interface MangaSearchDTO {
 	slug: string;
 }
 
+export interface MangaListItemDTO {
+	id: number;
+	slug: string;
+	name: string;
+	thumb: string;
+	chapterLatest: string;
+	chapterSlug: string;
+}
+
 export interface MangaDetailDTO {
 	name: string;
 	author: string;
