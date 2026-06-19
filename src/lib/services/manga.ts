@@ -1,4 +1,4 @@
-import type { MangaSearchDTO, MangaDetailDTO, MangaListItemDTO } from '$lib/types';
+import type { MangaSearchDTO, MangaDetailDTO, MangaListItemDTO, MangaListPage } from '$lib/types';
 import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
@@ -37,7 +37,7 @@ function parseListItem(block: string): MangaListItemDTO | null {
 	return { id, slug, name, thumb, chapterLatest, chapterSlug };
 }
 
-export async function getLatestManga(page = 1, cookieHeader?: string): Promise<MangaListItemDTO[]> {
+export async function getLatestManga(page = 1, cookieHeader?: string): Promise<MangaListPage> {
 	const res = await fetch(ENDPOINTS.latestManga(page), { headers: withUpstreamAuth(cookieHeader) });
 	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Latest manga fetch failed: ${res.status}`);
@@ -49,7 +49,14 @@ export async function getLatestManga(page = 1, cookieHeader?: string): Promise<M
 		const item = parseListItem(chunks[i]);
 		if (item) items.push(item);
 	}
-	return items;
+
+	const lastPageMatch = html.match(/page_last"[^>]*>Last\((\d+)\)/i);
+	const totalPages = lastPageMatch ? parseInt(lastPageMatch[1], 10) : 1;
+
+	const totalMatch = html.match(/Total:\s*([\d,]+)\s*stories/i);
+	const totalStories = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : items.length;
+
+	return { items, page, totalPages, totalStories };
 }
 
 export async function getMangaDetail(slug: string, cookieHeader?: string): Promise<MangaDetailDTO> {

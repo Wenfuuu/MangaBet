@@ -31,6 +31,13 @@ export interface MangaListItemDTO {
 	chapterSlug: string;
 }
 
+export interface MangaListPage {
+	items: MangaListItemDTO[];
+	page: number;
+	totalPages: number;
+	totalStories: number;
+}
+
 export interface MangaDetailDTO {
 	name: string;
 	author: string;
