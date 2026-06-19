@@ -19,6 +19,7 @@ export const ENDPOINTS = {
 	register: () => `${API_BASE_URL}/register`,
 	userChangesInfo: () => `${API_BASE_URL}/user_changes_info`,
 	bookmark: (page = 1) => `${API_BASE_URL}/bookmark${page > 1 ? `?page=${page}` : ''}`,
+	latestManga: (page = 1) => `${API_BASE_URL}/manga-list/latest-manga${page > 1 ? `?page=${page}` : ''}`,
 	mangaStatus: (id: string | number) => `${API_BASE_URL}/manga/status/${id}`,
 	bookmarkAction: (id: string | number, action: 'add' | 'remove') =>
 		`${API_BASE_URL}/action/bookmark/${id}?action=${action}`,
