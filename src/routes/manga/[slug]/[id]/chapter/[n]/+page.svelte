@@ -8,6 +8,7 @@
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import type { ReaderMode } from '$lib/types';
 	import { touchReaderIndex } from '$lib/api';
+	import { showToast } from '$lib/stores/toast.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -44,10 +45,15 @@
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ comicId: Number(mangaId), chapterId: data.chapterId }),
-		}).catch((err) => {
-			console.warn('[save-history] failed', err);
-			lastSavedChapterId = null;
-		});
+		})
+			.then((res) => {
+				if (!res.ok) throw new Error(`history failed: ${res.status}`);
+				showToast('Added to your reading history.');
+			})
+			.catch((err) => {
+				console.warn('[save-history] failed', err);
+				lastSavedChapterId = null;
+			});
 	});
 	let mode = $state<ReaderMode>('long');
 	let mangaMode = $state(false);
@@ -115,7 +121,7 @@
 	function goNext() {
 		// advance to the next chapter if on last page
 		// back to the manga detail page if this is the latest chapter
-		if (currentPage >= totalPages) {
+			if (currentPage >= totalPages) {
 			if (nextChapter) goToChapter(nextChapter);
 			else goto(backUrl);
 			return;
