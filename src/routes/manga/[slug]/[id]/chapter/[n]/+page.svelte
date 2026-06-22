@@ -48,7 +48,7 @@
 		})
 			.then((res) => {
 				if (!res.ok) throw new Error(`history failed: ${res.status}`);
-				showToast('Added to your reading history.');
+				showToast('Marked as read.');
 			})
 			.catch((err) => {
 				console.warn('[save-history] failed', err);
