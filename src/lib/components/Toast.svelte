@@ -64,13 +64,14 @@
 	@media (max-width: 480px) {
 		.toast {
 			bottom: 12px;
-			right: 12px;
 			left: 12px;
-			max-width: none;
+			right: 12px;
+			width: max-content;
+			max-width: calc(100vw - 24px);
+			margin: 0 auto;
 		}
 
 		.msg {
-			flex: 1;
 			white-space: normal;
 			font-size: 12px;
 		}
