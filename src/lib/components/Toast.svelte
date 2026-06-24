@@ -6,16 +6,14 @@
 </script>
 
 {#if toast}
-	{#key toast.id}
-		<div class="toast" role="status" transition:fly={{ y: 20, duration: 220 }}>
-			<span class="msg">{toast.message}</span>
-			<button type="button" class="close" onclick={dismissToast} aria-label="Dismiss">
-				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-					<path d="M18 6 6 18M6 6l12 12" />
-				</svg>
-			</button>
-		</div>
-	{/key}
+	<div class="toast" role="status" transition:fly={{ y: 20, duration: 220 }}>
+		<span class="msg">{toast.message}</span>
+		<button type="button" class="close" onclick={dismissToast} aria-label="Dismiss">
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+				<path d="M18 6 6 18M6 6l12 12" />
+			</svg>
+		</button>
+	</div>
 {/if}
 
 <style>
