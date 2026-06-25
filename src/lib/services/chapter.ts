@@ -19,8 +19,14 @@ function toChapter(dto: ChapterDTO): Chapter {
 
 export async function getChapters(slug: string, cookieHeader?: string): Promise<Chapter[]> {
 	const LIMIT = 50;
+	const cb = Date.now();
+	const fetchPage = (offset: number) =>
+		fetch(`${ENDPOINTS.chapters(slug, offset, LIMIT)}&_=${cb}`, {
+			headers: withUpstreamAuth(cookieHeader),
+			cache: 'no-store',
+		});
 
-	const first = await fetch(ENDPOINTS.chapters(slug, 0, LIMIT), { headers: withUpstreamAuth(cookieHeader) });
+	const first = await fetchPage(0);
 	if (first.status === 429) throw new RateLimitError();
 	if (!first.ok) throw new Error(`Chapters fetch failed: ${first.status}`);
 	const firstJson: ChaptersResponse = await first.json();
@@ -28,22 +34,23 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 	const { total } = firstJson.data.pagination;
 	const chapters = firstJson.data.chapters.map(toChapter);
 
-	if (total <= LIMIT) return chapters;
+	if (total > LIMIT) {
+		const offsets = Array.from(
+			{ length: Math.ceil((total - LIMIT) / LIMIT) },
+			(_, i) => (i + 1) * LIMIT
+		);
 
-	const offsets = Array.from(
-		{ length: Math.ceil((total - LIMIT) / LIMIT) },
-		(_, i) => (i + 1) * LIMIT
-	);
+		const rest = await Promise.all(
+			offsets.map((offset) =>
+				fetchPage(offset)
+					.then((r) => { if (r.status === 429) throw new RateLimitError(); if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
+					.then((json) => json.data.chapters.map(toChapter))
+			)
+		);
+		chapters.push(...rest.flat());
+	}
 
-	const rest = await Promise.all(
-		offsets.map((offset) =>
-			fetch(ENDPOINTS.chapters(slug, offset, LIMIT), { headers: withUpstreamAuth(cookieHeader) })
-				.then((r) => { if (r.status === 429) throw new RateLimitError(); if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
-				.then((json) => json.data.chapters.map(toChapter))
-		)
-	);
-
-	return chapters.concat(rest.flat());
+	return [...new Map(chapters.map((c) => [c.number, c])).values()];
 }
 
 export interface ChapterPageData {
