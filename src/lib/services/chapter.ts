@@ -19,9 +19,9 @@ function toChapter(dto: ChapterDTO): Chapter {
 
 export async function getChapters(slug: string, cookieHeader?: string): Promise<Chapter[]> {
 	const LIMIT = 50;
-	const cb = Date.now();
+	const cacheBuster = Date.now();
 	const fetchPage = (offset: number) =>
-		fetch(`${ENDPOINTS.chapters(slug, offset, LIMIT)}&_=${cb}`, {
+		fetch(`${ENDPOINTS.chapters(slug, offset, LIMIT)}&_=${cacheBuster}`, {
 			headers: withUpstreamAuth(cookieHeader),
 			cache: 'no-store',
 		});
