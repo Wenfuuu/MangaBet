@@ -54,14 +54,12 @@ function parseItem(block: string): BookmarkItem | null {
 }
 
 export async function getBookmarkStatus(id: string | number, cookieHeader?: string): Promise<boolean> {
-	const headers = withUpstreamAuth(cookieHeader);
-	// console.log('[getBookmarkStatus] request headers:', headers);
-	const res = await fetch(ENDPOINTS.mangaStatus(id), { headers });
+	const res = await fetch(`${ENDPOINTS.mangaStatus(id)}?_=${Date.now()}`, {
+		headers: withUpstreamAuth(cookieHeader),
+		cache: 'no-store',
+	});
 	if (!res.ok) throw new Error(`Bookmark status fetch failed: ${res.status}`);
 	const json = (await res.json()) as { success?: boolean; data?: { isBookmarked?: number } };
-	// console.log('[getBookmarkStatus]', id, 'isBookmarked=',
-	// json?.data?.isBookmarked, 'cache?', res.headers.get('cf-cache-status'),
-	// res.headers.get('age'));
 	return json?.data?.isBookmarked === 1;
 }
 
