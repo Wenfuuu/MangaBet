@@ -18,10 +18,17 @@ function formatLastUpdated(raw: string): string {
 }
 
 function parseChapterRef(block: string, label: 'Viewed' | 'Current'): BookmarkChapterRef | null {
-	const re = new RegExp(`${label}\\s*:[\\s\\S]*?href="([^"]*\\/chapter-([^"\\/]+))"[\\s\\S]*?Chapter\\s+(\\d+(?:\\.\\d+)?)`, 'i');
-	const m = block.match(re);
-	if (!m) return null;
-	return { number: parseFloat(m[3]), slug: m[2] };
+	const span = block.match(new RegExp(`<span[^>]*>\\s*${label}\\s*:([\\s\\S]*?)</span>`, 'i'));
+	if (!span) return null;
+
+	const href = span[1].match(/href="[^"]*\/chapter-([^"\/]+)"/i);
+	if (!href) return null;
+	const slug = href[1];
+
+	const labelled = span[1].match(/Chapter\s+(\d+(?:\.\d+)?)/i);
+	const number = labelled ? parseFloat(labelled[1]) : parseFloat(slug.replace(/-/g, '.'));
+
+	return { number: Number.isNaN(number) ? 0 : number, slug };
 }
 
 function parseItem(block: string): BookmarkItem | null {
