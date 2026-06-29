@@ -4,6 +4,7 @@
 	import { proxyImage } from '$lib/api';
 
 	let wideScrollEl = $state<HTMLDivElement | undefined>(undefined);
+	let failedPages = $state(new Set<number>());
 
 	$effect(() => {
 		if (!wideScrollEl) return;
@@ -130,8 +131,15 @@
 {#if mode === 'long'}
 	<div class="long-wrap">
 		<div class="long-inner">
-			{#each imageUrls as url}
-				<img class="long-img" src={proxyImage(url)} alt="" loading="lazy" />
+			{#each imageUrls as url, i}
+				<img
+					class="long-img"
+					class:failed={failedPages.has(i)}
+					src={proxyImage(url)}
+					alt="Page {i + 1}"
+					loading="lazy"
+					onerror={() => (failedPages = new Set(failedPages).add(i))}
+				/>
 			{/each}
 			<ChapterEndPanel {mangaSlug} {mangaId} {nextChapter} />
 		</div>
@@ -180,6 +188,18 @@
 	.long-img {
 		width: 100%;
 		display: block;
+	}
+
+	.long-img.failed {
+		min-height: 240px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px dashed rgba(255, 255, 255, 0.2);
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 0.875rem;
+		text-align: center;
 	}
 
 	.page-img {
