@@ -1,6 +1,7 @@
 import type { Chapter, ChapterDTO, ChaptersResponse } from '$lib/types';
 import { ENDPOINTS } from '$lib/api';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { fetchWithRetry } from './fetchRetry';
 import { decodeHtmlEntities } from './htmlEntities';
 import { RateLimitError } from './errors';
 
@@ -61,7 +62,7 @@ export interface ChapterPageData {
 }
 
 export async function getPages(mangaSlug: string, chapterSlug: string, cookieHeader?: string): Promise<ChapterPageData> {
-	const res = await fetch(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: withUpstreamAuth(cookieHeader) });
 	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
 	const html = await res.text();

@@ -2,11 +2,12 @@ import type { MangaSearchDTO, MangaDetailDTO, MangaListItemDTO, MangaListPage } 
 import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { fetchWithRetry } from './fetchRetry';
 import { RateLimitError } from './errors';
 
 export async function searchManga(query: string, page = 1, cookieHeader?: string): Promise<MangaSearchDTO[]> {
 	if (!query.trim()) return [];
-	const res = await fetch(ENDPOINTS.search(query, page), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.search(query, page), { headers: withUpstreamAuth(cookieHeader) });
 	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 	return res.json();
