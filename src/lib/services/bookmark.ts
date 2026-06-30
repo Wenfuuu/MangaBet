@@ -2,6 +2,7 @@ import type { BookmarkItem, BookmarkPage, BookmarkChapterRef } from '$lib/types'
 import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { fetchWithRetry } from './fetchRetry';
 import { RateLimitError } from './errors';
 
 function formatLastUpdated(raw: string): string {
@@ -61,7 +62,7 @@ function parseItem(block: string): BookmarkItem | null {
 }
 
 export async function getBookmarkStatus(id: string | number, cookieHeader?: string): Promise<boolean> {
-	const res = await fetch(`${ENDPOINTS.mangaStatus(id)}?_=${Date.now()}`, {
+	const res = await fetchWithRetry(`${ENDPOINTS.mangaStatus(id)}?_=${Date.now()}`, {
 		headers: withUpstreamAuth(cookieHeader),
 		cache: 'no-store',
 	});
@@ -71,7 +72,7 @@ export async function getBookmarkStatus(id: string | number, cookieHeader?: stri
 }
 
 export async function setBookmark(id: string | number, action: 'add' | 'remove', cookieHeader?: string): Promise<void> {
-	const res = await fetch(ENDPOINTS.bookmarkAction(id, action), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.bookmarkAction(id, action), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`Bookmark ${action} failed: ${res.status}`);
 }
 
@@ -93,7 +94,7 @@ export async function findBookmarkProgress(
 }
 
 export async function getBookmarks(page = 1, cookieHeader?: string): Promise<BookmarkPage> {
-	const res = await fetch(ENDPOINTS.bookmark(page), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.bookmark(page), { headers: withUpstreamAuth(cookieHeader) });
 	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Bookmark fetch failed: ${res.status}`);
 	const html = await res.text();

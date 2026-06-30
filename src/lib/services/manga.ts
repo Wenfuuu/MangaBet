@@ -39,7 +39,7 @@ function parseListItem(block: string): MangaListItemDTO | null {
 }
 
 export async function getLatestManga(page = 1, cookieHeader?: string): Promise<MangaListPage> {
-	const res = await fetch(ENDPOINTS.latestManga(page), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.latestManga(page), { headers: withUpstreamAuth(cookieHeader) });
 	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Latest manga fetch failed: ${res.status}`);
 	const html = await res.text();
@@ -61,7 +61,7 @@ export async function getLatestManga(page = 1, cookieHeader?: string): Promise<M
 }
 
 export async function getMangaDetail(slug: string, cookieHeader?: string): Promise<MangaDetailDTO> {
-	const res = await fetch(ENDPOINTS.mangaDetail(slug), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.mangaDetail(slug), { headers: withUpstreamAuth(cookieHeader) });
 	if (res.status === 429) throw new RateLimitError();
 	if (!res.ok) throw new Error(`Manga detail fetch failed: ${res.status}`);
 	const html = await res.text();

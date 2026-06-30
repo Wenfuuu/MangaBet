@@ -1,5 +1,6 @@
 import { ENDPOINTS } from '$lib/api';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { fetchWithRetry } from './fetchRetry';
 
 export async function saveHistory(
 	comicId: number,
@@ -10,7 +11,7 @@ export async function saveHistory(
 		...withUpstreamAuth(cookieHeader),
 		'Content-Type': 'application/json',
 	};
-	const res = await fetch(ENDPOINTS.addHistory(), {
+	const res = await fetchWithRetry(ENDPOINTS.addHistory(), {
 		method: 'POST',
 		headers,
 		body: JSON.stringify({ comic_id: comicId, chapter_id: chapterId }),

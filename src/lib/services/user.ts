@@ -2,6 +2,7 @@ import type { UserProfile } from '$lib/types';
 import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
+import { fetchWithRetry } from './fetchRetry';
 
 function extractInputValue(html: string, name: string): string {
 	const tagRe = new RegExp(`<input\\b[^>]*\\bname="${name}"[^>]*>`, 'i');
@@ -18,7 +19,7 @@ function extractTextarea(html: string, name: string): string {
 }
 
 export async function getUserProfile(cookieHeader?: string): Promise<UserProfile> {
-	const res = await fetch(ENDPOINTS.userChangesInfo(), { headers: withUpstreamAuth(cookieHeader) });
+	const res = await fetchWithRetry(ENDPOINTS.userChangesInfo(), { headers: withUpstreamAuth(cookieHeader) });
 	if (!res.ok) throw new Error(`User profile fetch failed: ${res.status}`);
 	const html = await res.text();
 
