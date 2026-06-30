@@ -22,7 +22,7 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 	const LIMIT = 50;
 	const cacheBuster = Date.now();
 	const fetchPage = (offset: number) =>
-		fetch(`${ENDPOINTS.chapters(slug, offset, LIMIT)}&_=${cacheBuster}`, {
+		fetchWithRetry(`${ENDPOINTS.chapters(slug, offset, LIMIT)}&_=${cacheBuster}`, {
 			headers: withUpstreamAuth(cookieHeader),
 			cache: 'no-store',
 		});
