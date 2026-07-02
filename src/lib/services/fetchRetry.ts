@@ -5,6 +5,8 @@ interface RetryOptions {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const MAX_RETRY_AFTER_MS = 5000;
+
 export async function fetchWithRetry(
 	url: string,
 	init?: RequestInit,
@@ -15,6 +17,14 @@ export async function fetchWithRetry(
 	for (let attempt = 0; attempt <= retries; attempt++) {
 		try {
 			const res = await fetch(url, init);
+			if (res.status === 429 && attempt < retries) {
+				const retryAfterMs = parseInt(res.headers.get('retry-after') ?? '', 10) * 1000;
+				if (retryAfterMs > 0 && retryAfterMs <= MAX_RETRY_AFTER_MS) {
+					await delay(retryAfterMs);
+					continue;
+				}
+				return res;
+			}
 			if (res.status >= 500 && attempt < retries) {
 				await delay(backoff(baseDelayMs, attempt));
 				continue;

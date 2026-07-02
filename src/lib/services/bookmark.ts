@@ -3,7 +3,7 @@ import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
 import { fetchWithRetry } from './fetchRetry';
-import { RateLimitError } from './errors';
+import { ensureOk } from './errors';
 
 function formatLastUpdated(raw: string): string {
 	const m = raw.match(/^(\d{1,2})-(\d{1,2})\s+(\d{1,2}:\d{2})$/);
@@ -62,18 +62,18 @@ function parseItem(block: string): BookmarkItem | null {
 }
 
 export async function getBookmarkStatus(id: string | number, cookieHeader?: string): Promise<boolean> {
-	const res = await fetchWithRetry(`${ENDPOINTS.mangaStatus(id)}?_=${Date.now()}`, {
+	const res = await fetchWithRetry(ENDPOINTS.mangaStatus(id), {
 		headers: withUpstreamAuth(cookieHeader),
 		cache: 'no-store',
 	});
-	if (!res.ok) throw new Error(`Bookmark status fetch failed: ${res.status}`);
+	ensureOk(res, 'Bookmark status fetch');
 	const json = (await res.json()) as { success?: boolean; data?: { isBookmarked?: number } };
 	return json?.data?.isBookmarked === 1;
 }
 
 export async function setBookmark(id: string | number, action: 'add' | 'remove', cookieHeader?: string): Promise<void> {
 	const res = await fetchWithRetry(ENDPOINTS.bookmarkAction(id, action), { headers: withUpstreamAuth(cookieHeader) });
-	if (!res.ok) throw new Error(`Bookmark ${action} failed: ${res.status}`);
+	ensureOk(res, `Bookmark ${action}`);
 }
 
 export async function findBookmarkProgress(
@@ -95,15 +95,19 @@ export async function findBookmarkProgress(
 
 export async function getBookmarks(page = 1, cookieHeader?: string): Promise<BookmarkPage> {
 	const res = await fetchWithRetry(ENDPOINTS.bookmark(page), { headers: withUpstreamAuth(cookieHeader) });
-	if (res.status === 429) throw new RateLimitError();
-	if (!res.ok) throw new Error(`Bookmark fetch failed: ${res.status}`);
+	ensureOk(res, 'Bookmark fetch');
 	const html = await res.text();
 
 	const items: BookmarkItem[] = [];
 	const chunks = html.split(/<div class="user-bookmark-item bm-it-/);
+	let unparsed = 0;
 	for (let i = 1; i < chunks.length; i++) {
 		const item = parseItem('<div class="user-bookmark-item bm-it-' + chunks[i]);
 		if (item) items.push(item);
+		else unparsed++;
+	}
+	if (unparsed > 0) {
+		console.warn(`[bookmark] getBookmarks: ${unparsed}/${chunks.length - 1} items failed to parse — upstream markup may have changed`);
 	}
 
 	const totalPagesMatch = html.match(/class="go-p-end[^"]*"[^>]*>Last\((\d+)\)/i);

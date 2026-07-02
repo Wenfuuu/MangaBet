@@ -3,13 +3,12 @@ import { ENDPOINTS } from '$lib/api';
 import { decodeHtmlEntities } from './htmlEntities';
 import { withUpstreamAuth } from './upstreamHeaders';
 import { fetchWithRetry } from './fetchRetry';
-import { RateLimitError } from './errors';
+import { ensureOk } from './errors';
 
 export async function searchManga(query: string, page = 1, cookieHeader?: string): Promise<MangaSearchDTO[]> {
 	if (!query.trim()) return [];
 	const res = await fetchWithRetry(ENDPOINTS.search(query, page), { headers: withUpstreamAuth(cookieHeader) });
-	if (res.status === 429) throw new RateLimitError();
-	if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+	ensureOk(res, 'Search');
 	return res.json();
 }
 
@@ -40,15 +39,19 @@ function parseListItem(block: string): MangaListItemDTO | null {
 
 export async function getLatestManga(page = 1, cookieHeader?: string): Promise<MangaListPage> {
 	const res = await fetchWithRetry(ENDPOINTS.latestManga(page), { headers: withUpstreamAuth(cookieHeader) });
-	if (res.status === 429) throw new RateLimitError();
-	if (!res.ok) throw new Error(`Latest manga fetch failed: ${res.status}`);
+	ensureOk(res, 'Latest manga fetch');
 	const html = await res.text();
 
 	const items: MangaListItemDTO[] = [];
 	const chunks = html.split(/<div class="list-comic-item-wrap">/);
+	let unparsed = 0;
 	for (let i = 1; i < chunks.length; i++) {
 		const item = parseListItem(chunks[i]);
 		if (item) items.push(item);
+		else unparsed++;
+	}
+	if (unparsed > 0) {
+		console.warn(`[manga] getLatestManga: ${unparsed}/${chunks.length - 1} list items failed to parse — upstream markup may have changed`);
 	}
 
 	const lastPageMatch = html.match(/page_last"[^>]*>Last\((\d+)\)/i);
@@ -62,11 +65,13 @@ export async function getLatestManga(page = 1, cookieHeader?: string): Promise<M
 
 export async function getMangaDetail(slug: string, cookieHeader?: string): Promise<MangaDetailDTO> {
 	const res = await fetchWithRetry(ENDPOINTS.mangaDetail(slug), { headers: withUpstreamAuth(cookieHeader) });
-	if (res.status === 429) throw new RateLimitError();
-	if (!res.ok) throw new Error(`Manga detail fetch failed: ${res.status}`);
+	ensureOk(res, 'Manga detail fetch');
 	const html = await res.text();
 
 	const nameMatch = html.match(/<div class="manga-info-content"[\s\S]*?<h1>([\s\S]*?)<\/h1>/);
+	if (!nameMatch) {
+		console.warn(`[manga] getMangaDetail(${slug}): title not found — upstream markup may have changed`);
+	}
 	const name = nameMatch ? decodeHtmlEntities(nameMatch[1].trim()) : slug;
 
 	const authorMatch = html.match(/Author\(s\)\s*:\s*([^\n<]+)/);
@@ -89,7 +94,9 @@ export async function getMangaDetail(slug: string, cookieHeader?: string): Promi
 			const ld = JSON.parse(jsonLdMatch[1]);
 			thumb = ld.itemReviewed?.image ?? '';
 			rating = parseFloat(ld.ratingValue ?? '0');
-		} catch {}
+		} catch {
+			console.warn(`[manga] getMangaDetail(${slug}): JSON-LD block failed to parse`);
+		}
 	}
 
 	const viewsMatch = html.match(/View\s*:\s*([\d,]+)/);

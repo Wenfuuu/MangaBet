@@ -1,6 +1,7 @@
 import { ENDPOINTS } from '$lib/api';
 import { withUpstreamAuth } from './upstreamHeaders';
 import { fetchWithRetry } from './fetchRetry';
+import { ensureOk } from './errors';
 
 export async function saveHistory(
 	comicId: number,
@@ -16,5 +17,5 @@ export async function saveHistory(
 		headers,
 		body: JSON.stringify({ comic_id: comicId, chapter_id: chapterId }),
 	});
-	if (!res.ok) throw new Error(`Save history failed: ${res.status}`);
+	ensureOk(res, 'Save history');
 }

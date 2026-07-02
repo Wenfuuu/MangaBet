@@ -9,3 +9,10 @@ export class RateLimitError extends Error {
 export function isRateLimitError(err: unknown): err is RateLimitError {
 	return err instanceof RateLimitError;
 }
+
+// Shared upstream response check: 429 → RateLimitError, other non-2xx → Error.
+export function ensureOk(res: Response, context: string): Response {
+	if (res.status === 429) throw new RateLimitError();
+	if (!res.ok) throw new Error(`${context} failed: ${res.status}`);
+	return res;
+}

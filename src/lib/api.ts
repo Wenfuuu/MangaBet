@@ -1,4 +1,8 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL;
+export const API_BASE_URL: string = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+	throw new Error('VITE_API_URL is not set — every upstream request would fail. Set it in .env');
+}
 
 export const API_BASE_HEADERS = {
 	Referer: API_BASE_URL,

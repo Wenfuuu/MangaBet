@@ -3,7 +3,7 @@ import { ENDPOINTS } from '$lib/api';
 import { withUpstreamAuth } from './upstreamHeaders';
 import { fetchWithRetry } from './fetchRetry';
 import { decodeHtmlEntities } from './htmlEntities';
-import { RateLimitError } from './errors';
+import { ensureOk } from './errors';
 
 const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -20,16 +20,14 @@ function toChapter(dto: ChapterDTO): Chapter {
 
 export async function getChapters(slug: string, cookieHeader?: string): Promise<Chapter[]> {
 	const LIMIT = 50;
-	const cacheBuster = Date.now();
 	const fetchPage = (offset: number) =>
-		fetchWithRetry(`${ENDPOINTS.chapters(slug, offset, LIMIT)}&_=${cacheBuster}`, {
+		fetchWithRetry(ENDPOINTS.chapters(slug, offset, LIMIT), {
 			headers: withUpstreamAuth(cookieHeader),
 			cache: 'no-store',
 		});
 
 	const first = await fetchPage(0);
-	if (first.status === 429) throw new RateLimitError();
-	if (!first.ok) throw new Error(`Chapters fetch failed: ${first.status}`);
+	ensureOk(first, 'Chapters fetch');
 	const firstJson: ChaptersResponse = await first.json();
 
 	const { total } = firstJson.data.pagination;
@@ -44,7 +42,7 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 		const rest = await Promise.all(
 			offsets.map((offset) =>
 				fetchPage(offset)
-					.then((r) => { if (r.status === 429) throw new RateLimitError(); if (!r.ok) throw new Error(`Chapters fetch failed: ${r.status}`); return r.json() as Promise<ChaptersResponse>; })
+					.then((r) => ensureOk(r, 'Chapters fetch').json() as Promise<ChaptersResponse>)
 					.then((json) => json.data.chapters.map(toChapter))
 			)
 		);
@@ -63,8 +61,7 @@ export interface ChapterPageData {
 
 export async function getPages(mangaSlug: string, chapterSlug: string, cookieHeader?: string): Promise<ChapterPageData> {
 	const res = await fetchWithRetry(ENDPOINTS.chapterPage(mangaSlug, `chapter-${chapterSlug}`), { headers: withUpstreamAuth(cookieHeader) });
-	if (res.status === 429) throw new RateLimitError();
-	if (!res.ok) throw new Error(`Chapter page fetch failed: ${res.status}`);
+	ensureOk(res, 'Chapter page fetch');
 	const html = await res.text();
 
 	const headMatch = html.match(/<head[\s\S]*?<\/head>/i);
