@@ -165,7 +165,7 @@
 		return () => window.removeEventListener('keydown', handleKey);
 	});
 
-	let progressPct = $derived((currentPage / totalPages) * 100);
+	let progressPct = $derived(totalPages > 0 ? (currentPage / totalPages) * 100 : 0);
 	let mangaSlug = $derived(page.params.slug ?? '');
 	let mangaId = $derived(page.params.id ?? '');
 	let backUrl = $derived(`/manga/${mangaSlug}/${mangaId}`);

@@ -24,7 +24,12 @@
 			if (slug === 'index' || slug === 'mode') continue;
 			const raw = localStorage.getItem(`mangabet:manga:${slug}`);
 			if (!raw) continue;
-			const manga: MangaSearchDTO = JSON.parse(raw);
+			let manga: MangaSearchDTO;
+			try {
+				manga = JSON.parse(raw);
+			} catch {
+				continue;
+			}
 			const chapterSlug = localStorage.getItem(key!) ?? '';
 			if (!chapterSlug) continue;
 			items.push({ manga, chapterSlug, readAt: idx[slug] ?? 0 });

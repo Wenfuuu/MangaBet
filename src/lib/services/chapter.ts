@@ -51,7 +51,7 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 		chapters.push(...rest.flat());
 	}
 
-	return [...new Map(chapters.map((c) => [c.number, c])).values()];
+	return [...new Map(chapters.map((c) => [c.slug, c])).values()];
 }
 
 export interface ChapterPageData {
