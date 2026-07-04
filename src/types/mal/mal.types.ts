@@ -38,8 +38,31 @@ export interface MalMangaStatus {
 
 export interface MalSyncResult {
 	synced: boolean;
-	reason?: 'unmapped';
+	reason?: 'unmapped' | 'suspect_oneshot';
 	unchanged?: boolean;
 	progress?: number;
 	malId?: number;
+}
+
+/** Trimmed-down entry returned by /api/mal/search for the mapping picker. */
+export interface MalSearchCandidate {
+	id: number;
+	title: string;
+	mediaType: string;
+	numChapters: number;
+	year: string | null;
+	image: string | null;
+}
+
+/** What /api/mal/resolve reports for a slug (auto mapping, no override applied). */
+export interface MalMappingInfo {
+	malId: number | null;
+	title: string | null;
+	malUrl: string | null;
+}
+
+/** localStorage shape for a user-corrected mapping. */
+export interface MalOverride {
+	malId: number;
+	title: string;
 }

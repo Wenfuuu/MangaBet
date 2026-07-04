@@ -4,6 +4,7 @@
 	import { enhance } from '$app/forms';
 	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
+	import MalMappingCard from '$lib/components/MalMappingCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { proxyImage, saveMangaDTO } from '$lib/api';
 	import type { PageData } from './$types';
@@ -186,6 +187,10 @@
 						{/if}
 					</button>
 				</div>
+
+				{#if page.data.malConnected}
+					<MalMappingCard {slug} mangaName={data.detail.name} />
+				{/if}
 			</div>
 		</div>
 	</div>

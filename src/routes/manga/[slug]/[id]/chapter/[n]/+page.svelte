@@ -7,7 +7,7 @@
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import type { ReaderMode } from '$lib/types';
-	import { touchReaderIndex } from '$lib/api';
+	import { touchReaderIndex, getMalOverride } from '$lib/api';
 	import { showToast } from '$lib/stores/toast.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -60,6 +60,7 @@
 	// effect above — history needs a mangabats login, MAL sync only needs a MAL link.
 	let lastMalSyncedChapter: string | null = null;
 	let malSessionExpired = false;
+	let malSuspectNotified = false;
 	$effect(() => {
 		if (!page.data?.malConnected || malSessionExpired) return;
 		if (!mangaSlug || chapterNum < 1) return;
@@ -67,10 +68,16 @@
 		if (lastMalSyncedChapter === chapterSlugParam) return;
 
 		lastMalSyncedChapter = chapterSlugParam;
+		// User-corrected mapping (set on the manga page) rides along and beats the auto lookup.
+		const override = getMalOverride(mangaSlug);
 		fetch('/api/mal/sync', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ slug: mangaSlug, chapter: chapterNum }),
+			body: JSON.stringify({
+				slug: mangaSlug,
+				chapter: chapterNum,
+				...(override ? { malId: override.malId } : {}),
+			}),
 		})
 			.then(async (res) => {
 				if (res.status === 401) {
@@ -82,6 +89,12 @@
 				const result = await res.json();
 				if (result.synced && !result.unchanged) {
 					showToast(`Synced to MAL — Ch. ${result.progress}`);
+				} else if (result.reason === 'suspect_oneshot') {
+					if (!malSuspectNotified) {
+						malSuspectNotified = true;
+						showToast('MAL match looks wrong (oneshot) — fix it on the manga page.');
+					}
+					console.info(`[mal-sync] suspect oneshot mapping for "${mangaSlug}" (malId ${result.malId})`);
 				} else if (result.reason === 'unmapped') {
 					console.info(`[mal-sync] no MAL entry mapped for "${mangaSlug}"`);
 				}

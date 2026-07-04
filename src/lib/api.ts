@@ -40,6 +40,31 @@ export function saveMangaDTO(manga: { id: number; slug: string; name: string; au
 	localStorage.setItem(`mangabet:manga:${manga.slug}`, JSON.stringify(manga));
 }
 
+// --- MAL mapping overrides (user corrections when the crowd-sourced mapping is wrong) ---
+
+import type { MalOverride } from '$lib/types';
+
+const malOverrideKey = (slug: string) => `mangabet:malOverride:${slug}`;
+
+export function getMalOverride(slug: string): MalOverride | null {
+	try {
+		const raw = localStorage.getItem(malOverrideKey(slug));
+		if (!raw) return null;
+		const parsed = JSON.parse(raw);
+		return Number.isInteger(parsed?.malId) && parsed.malId > 0 ? parsed : null;
+	} catch {
+		return null;
+	}
+}
+
+export function setMalOverride(slug: string, override: MalOverride): void {
+	localStorage.setItem(malOverrideKey(slug), JSON.stringify(override));
+}
+
+export function clearMalOverride(slug: string): void {
+	localStorage.removeItem(malOverrideKey(slug));
+}
+
 const READER_INDEX_KEY = 'mangabet:reader:index';
 
 export function getReaderIndex(): Record<string, number> {

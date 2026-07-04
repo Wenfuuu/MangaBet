@@ -8,9 +8,9 @@ import type { MalSyncPageMapping } from '$lib/types';
 const MAPPING_URL = (slug: string) => `https://api.malsync.moe/page/MangaNato/${encodeURIComponent(slug)}`;
 
 // Warm serverless instances keep this between requests; cold starts just refetch.
-const cache = new Map<string, number | null>();
+const cache = new Map<string, MalSyncPageMapping | null>();
 
-export async function resolveMalId(slug: string): Promise<number | null> {
+export async function resolveMapping(slug: string): Promise<MalSyncPageMapping | null> {
 	if (cache.has(slug)) return cache.get(slug)!;
 
 	const res = await fetchWithRetry(MAPPING_URL(slug));
@@ -25,7 +25,11 @@ export async function resolveMalId(slug: string): Promise<number | null> {
 	}
 
 	const mapping: MalSyncPageMapping = await res.json();
-	const malId = mapping.malId ?? null;
-	cache.set(slug, malId);
-	return malId;
+	cache.set(slug, mapping);
+	return mapping;
+}
+
+export async function resolveMalId(slug: string): Promise<number | null> {
+	const mapping = await resolveMapping(slug);
+	return mapping?.malId ?? null;
 }
