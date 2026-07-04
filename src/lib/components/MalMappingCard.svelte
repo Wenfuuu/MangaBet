@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import type { MalMappingInfo, MalSearchCandidate, MalOverride } from '$lib/types';
 	import { getMalOverride, setMalOverride, clearMalOverride } from '$lib/api';
 	import { showToast } from '$lib/stores/toast.svelte';
 
 	let { slug, mangaName }: { slug: string; mangaName: string } = $props();
+
+	let malConnected = $derived(Boolean(page.data?.malConnected));
 
 	let override = $state<MalOverride | null>(null);
 	let autoMapping = $state<MalMappingInfo | null>(null);
@@ -71,7 +74,7 @@
 		selected = c;
 		// Pre-check "complete the old entry" only when we can tell it's a oneshot.
 		const old = effectiveId !== null ? results.find((r) => r.id === effectiveId) : undefined;
-		markOldCompleted = Boolean(old && old.id !== c.id && isOneshot(old));
+		markOldCompleted = malConnected && Boolean(old && old.id !== c.id && isOneshot(old));
 	}
 
 	async function save() {
@@ -134,6 +137,9 @@
 			onclick={resetToAuto}
 		>reset</button>
 	{/if}
+	{#if !malConnected && effectiveId !== null}
+		<span class="font-sans text-xs text-[var(--text-faint)]">— connect MAL in the account menu to auto-sync progress</span>
+	{/if}
 </div>
 
 {#if pickerOpen}
@@ -187,7 +193,7 @@
 			</div>
 
 			<div class="px-5 py-4 border-t border-[var(--border-faint)] flex flex-col gap-3">
-				{#if selected && effectiveId !== null && selected.id !== effectiveId}
+				{#if malConnected && selected && effectiveId !== null && selected.id !== effectiveId}
 					<label class="flex items-start gap-2 font-sans text-xs text-[var(--text-soft)] cursor-pointer select-none">
 						<input type="checkbox" bind:checked={markOldCompleted} class="mt-0.5 accent-[var(--accent)]" />
 						<span>Also mark the previous entry (#{effectiveId}) as <strong>Completed</strong> on my list — useful when it's the oneshot version.</span>

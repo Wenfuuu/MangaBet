@@ -188,9 +188,7 @@
 					</button>
 				</div>
 
-				{#if page.data.malConnected}
-					<MalMappingCard {slug} mangaName={data.detail.name} />
-				{/if}
+				<MalMappingCard {slug} mangaName={data.detail.name} />
 			</div>
 		</div>
 	</div>

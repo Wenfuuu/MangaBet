@@ -12,14 +12,14 @@ interface MalSearchNode {
 	main_picture?: { medium?: string; large?: string };
 }
 
-export async function searchMalManga(query: string, token: string): Promise<MalSearchCandidate[]> {
+export async function searchMalManga(query: string, authHeaders: HeadersInit): Promise<MalSearchCandidate[]> {
 	const params = new URLSearchParams({
 		q: query,
 		limit: '10',
 		fields: 'media_type,num_chapters,start_date',
 	});
 	const res = await fetchWithRetry(`${API_BASE}/manga?${params}`, {
-		headers: { Authorization: `Bearer ${token}` },
+		headers: authHeaders,
 	});
 	if (!res.ok) throw new Error(`MAL search failed: ${res.status}`);
 	const body: { data?: { node: MalSearchNode }[] } = await res.json();
