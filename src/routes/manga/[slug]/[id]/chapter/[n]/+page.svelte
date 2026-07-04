@@ -55,6 +55,42 @@
 				lastSavedChapterId = null;
 			});
 	});
+
+	// Push chapter progress to MyAnimeList on finish. Independent of the history
+	// effect above — history needs a mangabats login, MAL sync only needs a MAL link.
+	let lastMalSyncedChapter: string | null = null;
+	let malSessionExpired = false;
+	$effect(() => {
+		if (!page.data?.malConnected || malSessionExpired) return;
+		if (!mangaSlug || chapterNum < 1) return;
+		if (totalPages === 0 || currentPage < totalPages) return;
+		if (lastMalSyncedChapter === chapterSlugParam) return;
+
+		lastMalSyncedChapter = chapterSlugParam;
+		fetch('/api/mal/sync', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ slug: mangaSlug, chapter: chapterNum }),
+		})
+			.then(async (res) => {
+				if (res.status === 401) {
+					malSessionExpired = true;
+					showToast('MAL session expired — reconnect in the account menu.');
+					return;
+				}
+				if (!res.ok) throw new Error(`mal sync failed: ${res.status}`);
+				const result = await res.json();
+				if (result.synced && !result.unchanged) {
+					showToast(`Synced to MAL — Ch. ${result.progress}`);
+				} else if (result.reason === 'unmapped') {
+					console.info(`[mal-sync] no MAL entry mapped for "${mangaSlug}"`);
+				}
+			})
+			.catch((err) => {
+				console.warn('[mal-sync] failed', err);
+				lastMalSyncedChapter = null;
+			});
+	});
 	let mode = $state<ReaderMode>('long');
 	let mangaMode = $state(false);
 	let sidebarOpen = $state(false);

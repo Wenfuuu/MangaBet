@@ -3,3 +3,4 @@ export type { Chapter, ChapterDTO, ChaptersResponse } from '../types/chapter/cha
 export type { ContinueItem, ReaderMode } from '../types/reader/reader.types';
 export type { UserProfile } from '../types/user/user.types';
 export type { BookmarkItem, BookmarkChapterRef, BookmarkPage } from '../types/bookmark/bookmark.types';
+export type { MalTokenResponse, MalSyncPageMapping, MalReadStatus, MalListStatus, MalMangaStatus, MalSyncResult } from '../types/mal/mal.types';

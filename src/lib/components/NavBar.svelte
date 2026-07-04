@@ -19,10 +19,25 @@
 
 	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
 	let displayname = $derived(page.data?.user?.displayname);
+	let malConnected = $derived(Boolean(page.data?.malConnected));
 
 	async function logout() {
 		accountOpen = false;
 		await fetch('/api/logout', { method: 'POST' });
+		location.reload();
+	}
+
+	function connectMal() {
+		accountOpen = false;
+		menuOpen = false;
+		// Full navigation — the endpoint 302s to MyAnimeList's consent page.
+		location.href = `/api/mal/login?return=${encodeURIComponent(page.url.pathname + page.url.search)}`;
+	}
+
+	async function disconnectMal() {
+		accountOpen = false;
+		menuOpen = false;
+		await fetch('/api/mal/logout', { method: 'POST' });
 		location.reload();
 	}
 
@@ -244,6 +259,17 @@
 							onclick={() => { accountOpen = false; goto('/register'); }}
 						>Register</button>
 					{/if}
+					{#if malConnected}
+						<button
+							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)] border-t border-[rgba(160,130,100,0.12)]"
+							onclick={disconnectMal}
+						>Disconnect MAL</button>
+					{:else}
+						<button
+							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)] border-t border-[rgba(160,130,100,0.12)]"
+							onclick={connectMal}
+						>Connect MyAnimeList</button>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -299,6 +325,17 @@
 					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
 					onclick={() => { menuOpen = false; goto('/register'); }}
 				>Register</button>
+			{/if}
+			{#if malConnected}
+				<button
+					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
+					onclick={disconnectMal}
+				>Disconnect MAL</button>
+			{:else}
+				<button
+					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
+					onclick={connectMal}
+				>Connect MyAnimeList</button>
 			{/if}
 		</nav>
 	{/if}
