@@ -1,6 +1,6 @@
 import { fetchWithRetry } from '$lib/services/fetchRetry';
 import { RateLimitError } from '$lib/services/errors';
-import type { MalMangaStatus, MalListStatus, MalReadStatus, MalSearchCandidate } from '$lib/types';
+import type { MalMangaStatus, MalListStatus, MalReadStatus, MalSearchCandidate, MalListEntry } from '$lib/types';
 
 const API_BASE = 'https://api.myanimelist.net/v2';
 
@@ -46,6 +46,49 @@ export async function getMangaStatus(malId: number, token: string): Promise<MalM
 	});
 	ensureMalOk(res, 'MAL manga status fetch');
 	return res.json();
+}
+
+interface MalListItemRaw {
+	node: { id: number; num_chapters?: number };
+	list_status?: { status?: MalReadStatus; num_chapters_read?: number };
+}
+
+/** The user's whole manga list — one request per 1000 entries. Used to diff before mass sync. */
+export async function getUserMangaList(token: string): Promise<MalListEntry[]> {
+	const LIMIT = 1000;
+	const entries: MalListEntry[] = [];
+	let offset = 0;
+
+	for (;;) {
+		const params = new URLSearchParams({
+			fields: 'list_status,num_chapters',
+			limit: String(LIMIT),
+			offset: String(offset),
+			// MAL omits NSFW-flagged entries by default — without this the diff would
+			// miss list entries and mass sync would re-write them every run.
+			nsfw: 'true',
+		});
+		const res = await fetchWithRetry(`${API_BASE}/users/@me/mangalist?${params}`, {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+		ensureMalOk(res, 'MAL list fetch');
+		const body: { data?: MalListItemRaw[]; paging?: { next?: string } } = await res.json();
+		const data = body.data ?? [];
+
+		for (const it of data) {
+			entries.push({
+				malId: it.node.id,
+				status: it.list_status?.status ?? '',
+				chaptersRead: it.list_status?.num_chapters_read ?? 0,
+				numChapters: it.node.num_chapters ?? 0,
+			});
+		}
+
+		if (data.length < LIMIT || !body.paging?.next) break;
+		offset += LIMIT;
+	}
+
+	return entries;
 }
 
 export async function updateMangaListStatus(

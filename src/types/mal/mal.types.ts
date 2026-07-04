@@ -66,3 +66,11 @@ export interface MalOverride {
 	malId: number;
 	title: string;
 }
+
+/** One entry of the user's MAL manga list, trimmed for the mass-sync diff. */
+export interface MalListEntry {
+	malId: number;
+	status: string;
+	chaptersRead: number;
+	numChapters: number;
+}

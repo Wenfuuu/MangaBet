@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { PageData } from './$types';
-	import type { BookmarkItem, MalSyncResult } from '$lib/types';
+	import type { BookmarkItem, MalSyncResult, MalListEntry } from '$lib/types';
 	import BookmarkCard from '$lib/components/BookmarkCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
@@ -22,9 +22,19 @@
 		syncTotal = 0;
 
 		try {
-			const res = await fetch('/api/bookmarks');
-			if (!res.ok) throw new Error(`bookmarks fetch failed: ${res.status}`);
-			const items: BookmarkItem[] = await res.json();
+			const [bookmarksRes, listRes] = await Promise.all([
+				fetch('/api/bookmarks'),
+				fetch('/api/mal/list'),
+			]);
+			if (!bookmarksRes.ok) throw new Error(`bookmarks fetch failed: ${bookmarksRes.status}`);
+			if (listRes.status === 401) {
+				showToast('MAL session expired — reconnect in the account menu.');
+				return;
+			}
+			if (!listRes.ok) throw new Error(`MAL list fetch failed: ${listRes.status}`);
+			const items: BookmarkItem[] = await bookmarksRes.json();
+			const listEntries: MalListEntry[] = await listRes.json();
+			const malList = new Map(listEntries.map((e) => [e.malId, e]));
 			syncTotal = items.length;
 			if (items.length === 0) {
 				showToast('No bookmarks to sync.');
@@ -37,13 +47,28 @@
 			let rateLimited = 0;
 			let sessionExpired = false;
 
+			// Diff against the MAL list first: anything already up to date is settled
+			// locally with zero requests. Only real changes and unknown mappings go out.
+			const queue: { item: BookmarkItem; attempts: number }[] = [];
+			for (const item of items) {
+				const knownId = getMalOverride(item.mangaSlug)?.malId ?? getCachedMalId(item.mangaSlug);
+				const entry = knownId !== null ? malList.get(knownId) : undefined;
+				if (entry) {
+					const chapter = item.viewedChapter ? Math.floor(item.viewedChapter.number) : 0;
+					// Progress already there, or on the list in any status for unread items.
+					if (chapter < 1 || entry.chaptersRead >= chapter) {
+						synced++;
+						syncDone++;
+						continue;
+					}
+				}
+				queue.push({ item, attempts: 0 });
+			}
+
 			const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 			const MAX_ATTEMPTS = 4;
 			// When any request gets a 429, all workers pause until this timestamp.
 			let pauseUntil = 0;
-
-			// Low concurrency + pacing so we don't hammer MAL or the mapping API.
-			const queue = items.map((item) => ({ item, attempts: 0 }));
 			const worker = async () => {
 				while (queue.length > 0 && !sessionExpired) {
 					const wait = pauseUntil - Date.now();
@@ -114,7 +139,7 @@
 			showToast(`MAL sync: ${parts.join(' · ')}`);
 		} catch (err) {
 			console.warn('[mal-mass-sync] failed', err);
-			showToast('MAL sync failed — could not load bookmarks.');
+			showToast('MAL sync failed — could not load bookmarks or MAL list.');
 		} finally {
 			syncing = false;
 		}
