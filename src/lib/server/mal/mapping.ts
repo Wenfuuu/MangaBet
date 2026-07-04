@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { fetchWithRetry } from '$lib/services/fetchRetry';
 import { RateLimitError, isRateLimitError } from '$lib/services/errors';
 import type { MalSyncPageMapping } from '$lib/types';
@@ -8,9 +9,14 @@ import type { MalSyncPageMapping } from '$lib/types';
  */
 const MAPPING_URL = (slug: string) => `https://api.malsync.moe/page/MangaNato/${encodeURIComponent(slug)}`;
 
-/** Jikan (unofficial MAL mirror) — title search used as fallback. 3 req/s, 60 req/min. */
+/** Jikan (unofficial MAL mirror) — title-search fallback. 3 req/s, 60 req/min. */
 const JIKAN_SEARCH_URL = (title: string) =>
 	`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=10`;
+
+/** Official MAL search (app auth) — the strongest title matcher. q is capped at 64 chars. */
+const MAL_SEARCH_URL = (q: string) =>
+	`https://api.myanimelist.net/v2/manga?q=${encodeURIComponent(q)}&limit=10&fields=alternative_titles,media_type`;
+const MAL_Q_MAX = 64;
 
 // Warm serverless instances keep these between requests; cold starts just refetch.
 const cache = new Map<string, MalSyncPageMapping | null>();
@@ -43,6 +49,91 @@ export async function resolveMapping(slug: string): Promise<MalSyncPageMapping |
 	return mapping;
 }
 
+// Titles must be letter-for-letter identical ignoring case, spacing, punctuation
+// and common romanization variants. Sites and MAL disagree on word breaks
+// ("Sukitte" vs "Suki tte"), the を particle ("o" vs "wo") and long vowels
+// ("Mahou"/"Mahō"/"Maho") — while fuzzy acceptance would corrupt lists with
+// different works, so we fold those variants and require full equality.
+const squash = (s: string) =>
+	s
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[̀-ͯ]/g, '') // macrons/diacritics: ō → o
+		.replace(/\bwo\b/g, 'o') // を particle romanized both ways
+		.replace(/[^\p{L}\p{N}]+/gu, '')
+		.replace(/ou/g, 'o') // long-vowel folding
+		.replace(/([aeiou])\1+/g, '$1');
+
+// Manga sites never host prose novels — a novel entry sharing the title is the
+// adaptation source, not what the user is reading.
+const NOVEL_TYPES = new Set(['novel', 'light_novel', 'light novel']);
+
+// Bracketed qualifiers often differ between sites and MAL ("[Baku Advantage] X",
+// "X (Serialization)", "X [Pixiv Edition]") — compare with and without them.
+// Never strip markers that distinguish a different WORK rather than a labeling
+// quirk (doujinshi, novel editions, anthologies).
+const MEANINGFUL_BRACKET = /doujin|novel|anthology|one[- ]?shot/i;
+const BRACKET_LEAD = /^\s*(\[[^\]]*\]|【[^】]*】|\([^)]*\))\s*/;
+const BRACKET_TRAIL = /\s*(\[[^\]]*\]|【[^】]*】|\([^)]*\))\s*$/;
+
+function titleVariants(t: string): string[] {
+	const variants = [t];
+	let cur = t.trim();
+	for (const re of [BRACKET_LEAD, BRACKET_TRAIL, BRACKET_LEAD, BRACKET_TRAIL]) {
+		const m = cur.match(re);
+		if (m && !MEANINGFUL_BRACKET.test(m[1])) {
+			cur = cur.replace(re, '').trim();
+			if (cur) variants.push(cur);
+		}
+	}
+	return variants;
+}
+
+const digitsOf = (s: string) => s.replace(/\D/g, '');
+
+function editDistance(a: string, b: string): number {
+	let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+	for (let i = 1; i <= a.length; i++) {
+		const cur = [i];
+		for (let j = 1; j <= b.length; j++) {
+			cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+		}
+		prev = cur;
+	}
+	return prev[b.length];
+}
+
+type MatchGrade = 'exact' | 'fuzzy';
+// Fuzzy tier: long titles only, digits must be identical (a sequel's "2" can
+// never sneak through), and at most ~4% of the letters may differ — enough for
+// romanization drift like "Batoru"/"Battle", far too tight for a different work.
+const FUZZY_MIN_LEN = 20;
+const FUZZY_RATIO = 0.04;
+
+function gradeMatch(siteTitle: string, candidateTitles: (string | null | undefined)[]): MatchGrade | null {
+	const wants = titleVariants(siteTitle).map(squash).filter(Boolean);
+	const cands = candidateTitles
+		.filter((t): t is string => Boolean(t))
+		.flatMap(titleVariants)
+		.map(squash)
+		.filter(Boolean);
+
+	for (const w of wants) if (cands.includes(w)) return 'exact';
+
+	for (const w of wants) {
+		if (w.length < FUZZY_MIN_LEN) continue;
+		const wd = digitsOf(w);
+		for (const c of cands) {
+			if (c.length < FUZZY_MIN_LEN || digitsOf(c) !== wd) continue;
+			const max = Math.floor(Math.max(w.length, c.length) * FUZZY_RATIO);
+			if (max > 0 && Math.abs(w.length - c.length) <= max && editDistance(w, c) <= max) {
+				return 'fuzzy';
+			}
+		}
+	}
+	return null;
+}
+
 interface JikanManga {
 	mal_id: number;
 	type?: string | null;
@@ -50,73 +141,138 @@ interface JikanManga {
 	titles?: { type: string; title: string }[];
 }
 
-// Titles must match exactly after normalization — Jikan's top result is often a
-// different work entirely, so fuzzy acceptance would corrupt the user's list.
-const normalizeTitle = (s: string) =>
-	s
-		.toLowerCase()
-		.replace(/[’‘]/g, "'")
-		.replace(/[“”]/g, '"')
-		.replace(/\s+/g, ' ')
-		.trim();
-
 async function searchJikanExact(title: string): Promise<ResolvedEntry | null> {
 	const res = await fetchWithRetry(JIKAN_SEARCH_URL(title));
 	if (res.status === 429) throw new RateLimitError('Jikan API rate limited');
 	if (!res.ok) throw new Error(`Jikan search failed: ${res.status}`);
 
 	const body: { data?: JikanManga[] } = await res.json();
-	const want = normalizeTitle(title);
-	const exact = (body.data ?? []).filter((m) =>
-		m.titles?.some((t) => normalizeTitle(t.title) === want),
-	);
-	if (exact.length === 0) return null;
+	const graded = (body.data ?? [])
+		.filter((m) => !NOVEL_TYPES.has((m.type ?? '').toLowerCase()))
+		.map((m) => ({ m, grade: gradeMatch(title, (m.titles ?? []).map((t) => t.title)) }))
+		.filter((x) => x.grade !== null);
+	if (graded.length === 0) return null;
+
+	const exactOnly = graded.filter((x) => x.grade === 'exact');
+	const pool = (exactOnly.length > 0 ? exactOnly : graded).map((x) => x.m);
 
 	// Same-title collisions: prefer the serialization over a oneshot, then the
 	// entry with the largest MAL following (almost always the "main" one).
-	const nonOneshot = exact.filter((m) => m.type !== 'One-shot');
-	const pool = nonOneshot.length > 0 ? nonOneshot : exact;
-	const pick = pool.sort((a, b) => (b.members ?? 0) - (a.members ?? 0))[0];
+	const nonOneshot = pool.filter((m) => (m.type ?? '').toLowerCase() !== 'one-shot');
+	const pick = (nonOneshot.length > 0 ? nonOneshot : pool).sort(
+		(a, b) => (b.members ?? 0) - (a.members ?? 0),
+	)[0];
 	return {
 		malId: pick.mal_id,
 		title: pick.titles?.find((t) => t.type === 'Default')?.title ?? title,
 	};
 }
 
+interface MalSearchResultNode {
+	id: number;
+	title: string;
+	media_type?: string;
+	alternative_titles?: { en?: string; ja?: string; synonyms?: string[] };
+}
+
+async function searchMalExact(title: string, isSiblingLookup = false): Promise<ResolvedEntry | null> {
+	if (!env.MAL_CLIENT_ID) return null;
+
+	// MAL rejects queries over 64 chars ("invalid q") — truncate at a word boundary.
+	let q = title;
+	if (q.length > MAL_Q_MAX) {
+		q = q.slice(0, MAL_Q_MAX);
+		const lastSpace = q.lastIndexOf(' ');
+		if (lastSpace > 20) q = q.slice(0, lastSpace);
+	}
+
+	const res = await fetchWithRetry(MAL_SEARCH_URL(q), {
+		headers: { 'X-MAL-CLIENT-ID': env.MAL_CLIENT_ID },
+	});
+	if (res.status === 429) throw new RateLimitError('MAL search rate limited');
+	if (!res.ok) throw new Error(`MAL search failed: ${res.status}`);
+
+	const body: { data?: { node: MalSearchResultNode }[] } = await res.json();
+	const gradedAll = (body.data ?? [])
+		.map((d) => d.node)
+		.map((n) => {
+			const alt = n.alternative_titles ?? {};
+			return { n, grade: gradeMatch(title, [n.title, alt.en, ...(alt.synonyms ?? [])]) };
+		})
+		.filter((x) => x.grade !== null);
+
+	const graded = gradedAll.filter((x) => !NOVEL_TYPES.has((x.n.media_type ?? '').toLowerCase()));
+	if (graded.length > 0) {
+		const exactOnly = graded.filter((x) => x.grade === 'exact');
+		const pool = (exactOnly.length > 0 ? exactOnly : graded).map((x) => x.n);
+
+		// Keep MAL's relevance order; just avoid landing on a oneshot when the
+		// serialization is also an exact match.
+		const nonOneshot = pool.filter((n) => (n.media_type ?? '').toLowerCase() !== 'one_shot');
+		const pick = (nonOneshot.length > 0 ? nonOneshot : pool)[0];
+		return { malId: pick.id, title: pick.title };
+	}
+
+	// Only a novel matched — sites host the manga adaptation, which often shares
+	// the novel's native title but lacks its English synonyms (so the first
+	// search misses it). One re-search with the novel's own title finds it.
+	if (!isSiblingLookup) {
+		const novelHit = gradedAll.find((x) => x.grade === 'exact');
+		if (novelHit) return searchMalExact(novelHit.n.title, true);
+	}
+	return null;
+}
+
 /**
- * Slug mapping via MAL-Sync first (authoritative), Jikan exact-title search as
- * fallback when MAL-Sync is rate limited or has no mapping. Throws RateLimitError
- * only when the item could not be resolved AND a later retry might succeed.
+ * Slug mapping via MAL-Sync first (authoritative), then title search on the
+ * official MAL API and Jikan, gated to exact (squashed) title matches.
+ *
+ * A broken tier is skipped, never fatal. Throws RateLimitError only when the
+ * item stayed unresolved AND some source was busy — i.e. a retry might succeed.
  */
 export async function resolveMalIdWithFallback(
 	slug: string,
 	title?: string,
 ): Promise<{ malId: number | null; title: string | null }> {
-	// A previous fallback hit answers immediately without spending malsync budget.
+	// A previous fallback hit answers immediately without spending any budget.
 	const cachedFallback = fallbackCache.get(slug);
 	if (cachedFallback) return cachedFallback;
 
-	let malsyncLimited = false;
+	// True whenever a source failed to give a definitive answer — makes the
+	// overall result "retry later" instead of a cacheable "unmapped".
+	let retryable = false;
+
 	try {
 		const mapping = await resolveMapping(slug);
 		if (mapping?.malId) return { malId: mapping.malId, title: mapping.title };
-		// malsync definitively knows this slug has no MAL entry → try the fallback.
+		// definitive: malsync knows this slug and it has no MAL entry
 	} catch (err) {
-		if (!isRateLimitError(err)) throw err;
-		malsyncLimited = true;
+		retryable = true;
+		if (!isRateLimitError(err)) console.warn(`[mal] malsync lookup failed for "${slug}"`, err);
 	}
 
 	if (title && !fallbackCache.has(slug)) {
-		const found = await searchJikanExact(title);
+		let found: ResolvedEntry | null = null;
+		for (const tier of [searchMalExact, searchJikanExact]) {
+			try {
+				found = await tier(title);
+				if (found) break;
+			} catch (err) {
+				retryable = true;
+				if (!isRateLimitError(err)) console.warn(`[mal] title fallback failed for "${title}"`, err);
+			}
+		}
 		if (found) {
 			fallbackCache.set(slug, found);
 			return found;
 		}
-		// Only a definitive malsync miss makes "no match" cacheable — while malsync
-		// is throttled it might still know a mapping Jikan can't find by title.
-		if (!malsyncLimited) fallbackCache.set(slug, null);
+		if (!retryable) {
+			// Every source answered definitively: this manga has no findable MAL entry.
+			fallbackCache.set(slug, null);
+			return { malId: null, title: null };
+		}
 	}
 
-	if (malsyncLimited) throw new RateLimitError('Mapping lookups rate limited');
+	if (retryable) throw new RateLimitError('Mapping sources busy — retry shortly');
 	return { malId: null, title: null };
 }
