@@ -88,6 +88,7 @@
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({
 								slug: item.mangaSlug,
+								title: item.title,
 								...(override ? { malId: override.malId, trusted: true } : {}),
 								...(cachedId ? { malId: cachedId } : {}),
 								...(chapter >= 1 ? { chapter } : { planToRead: true }),

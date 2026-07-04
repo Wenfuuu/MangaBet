@@ -19,7 +19,7 @@
 		override = getMalOverride(slug);
 		loading = true;
 		autoMapping = null;
-		fetch(`/api/mal/resolve?slug=${encodeURIComponent(slug)}`)
+		fetch(`/api/mal/resolve?slug=${encodeURIComponent(slug)}&title=${encodeURIComponent(mangaName)}`)
 			.then((res) => (res.ok ? res.json() : null))
 			.then((info) => (autoMapping = info))
 			.catch(() => (autoMapping = null))

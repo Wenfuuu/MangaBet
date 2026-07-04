@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isMalConnected, getValidAccessToken } from '$lib/server/mal/oauth';
-import { resolveMalId } from '$lib/server/mal/mapping';
+import { resolveMalIdWithFallback } from '$lib/server/mal/mapping';
 import { getMangaStatus, updateMangaListStatus } from '$lib/server/mal/api';
 import { isRateLimitError } from '$lib/services/errors';
 import type { MalSyncResult } from '$lib/types';
@@ -11,6 +11,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	const body = (await request.json().catch(() => null)) as {
 		slug?: string;
+		/** display title — enables the Jikan title-search fallback when the slug is unmapped */
+		title?: string;
 		chapter?: number;
 		malId?: number;
 		/** true only for user-corrected mappings — they skip the suspect-oneshot guard */
@@ -18,6 +20,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		planToRead?: boolean;
 	} | null;
 	const slug = body?.slug;
+	const title = typeof body?.title === 'string' && body.title.trim() ? body.title.trim() : undefined;
 	const planToRead = body?.planToRead === true;
 	const trusted = body?.trusted === true && body?.malId !== undefined;
 	// MAL only accepts whole chapters — floor the 10.5-style extras.
@@ -33,7 +36,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	try {
 		// Client-provided IDs (override or cached) skip the mapping lookup entirely.
-		const malId = providedMalId ?? (await resolveMalId(slug!));
+		const malId = providedMalId ?? (await resolveMalIdWithFallback(slug!, title)).malId;
 		if (malId === null) {
 			return json({ synced: false, reason: 'unmapped' } satisfies MalSyncResult);
 		}

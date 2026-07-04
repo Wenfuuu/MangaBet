@@ -1,17 +1,27 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { resolveMapping } from '$lib/server/mal/mapping';
+import { resolveMalIdWithFallback } from '$lib/server/mal/mapping';
+import { isRateLimitError } from '$lib/services/errors';
 import type { MalMappingInfo } from '$lib/types';
 
-/** Reports the automatic (crowd-sourced) MAL mapping for a slug — overrides live client-side. */
+/**
+ * Reports the automatic MAL mapping for a slug (MAL-Sync DB, Jikan title-search
+ * fallback) — user overrides live client-side.
+ */
 export const GET: RequestHandler = async ({ url }) => {
 	const slug = url.searchParams.get('slug');
 	if (!slug) error(400, 'Missing slug');
+	const title = url.searchParams.get('title')?.trim() || undefined;
 
-	const mapping = await resolveMapping(slug);
-	return json({
-		malId: mapping?.malId ?? null,
-		title: mapping?.title ?? null,
-		malUrl: mapping?.malId ? `https://myanimelist.net/manga/${mapping.malId}` : null,
-	} satisfies MalMappingInfo);
+	try {
+		const resolved = await resolveMalIdWithFallback(slug, title);
+		return json({
+			malId: resolved.malId,
+			title: resolved.title,
+			malUrl: resolved.malId ? `https://myanimelist.net/manga/${resolved.malId}` : null,
+		} satisfies MalMappingInfo);
+	} catch (err) {
+		if (isRateLimitError(err)) error(429, 'Mapping lookups rate limited — retry shortly');
+		throw err;
+	}
 };
