@@ -2,7 +2,8 @@ import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isMalConnected, getValidAccessToken } from '$lib/server/mal/oauth';
 import { resolveMalId } from '$lib/server/mal/mapping';
-import { getMangaStatus, updateMangaProgress } from '$lib/server/mal/api';
+import { getMangaStatus, updateMangaListStatus } from '$lib/server/mal/api';
+import { isRateLimitError } from '$lib/services/errors';
 import type { MalSyncResult } from '$lib/types';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -12,47 +13,72 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		slug?: string;
 		chapter?: number;
 		malId?: number;
+		/** true only for user-corrected mappings — they skip the suspect-oneshot guard */
+		trusted?: boolean;
+		planToRead?: boolean;
 	} | null;
 	const slug = body?.slug;
+	const planToRead = body?.planToRead === true;
+	const trusted = body?.trusted === true && body?.malId !== undefined;
 	// MAL only accepts whole chapters — floor the 10.5-style extras.
 	const chapter = Math.floor(Number(body?.chapter));
-	const overrideMalId = body?.malId;
-	if (!Number.isFinite(chapter) || chapter < 1) error(400, 'Invalid chapter');
-	if (overrideMalId !== undefined && (!Number.isInteger(overrideMalId) || overrideMalId < 1)) {
+	const providedMalId = body?.malId;
+	if (!planToRead && (!Number.isFinite(chapter) || chapter < 1)) error(400, 'Invalid chapter');
+	if (providedMalId !== undefined && (!Number.isInteger(providedMalId) || providedMalId < 1)) {
 		error(400, 'Invalid malId');
 	}
-	if (overrideMalId === undefined && (!slug || typeof slug !== 'string')) {
+	if (providedMalId === undefined && (!slug || typeof slug !== 'string')) {
 		error(400, 'Missing slug or malId');
 	}
 
-	// A user-corrected mapping (from the manga page) beats the crowd-sourced database.
-	const malId = overrideMalId ?? (await resolveMalId(slug!));
-	if (malId === null) {
-		return json({ synced: false, reason: 'unmapped' } satisfies MalSyncResult);
+	try {
+		// Client-provided IDs (override or cached) skip the mapping lookup entirely.
+		const malId = providedMalId ?? (await resolveMalId(slug!));
+		if (malId === null) {
+			return json({ synced: false, reason: 'unmapped' } satisfies MalSyncResult);
+		}
+
+		const token = await getValidAccessToken(cookies);
+		if (!token) error(401, 'MAL session expired');
+
+		const manga = await getMangaStatus(malId, token);
+
+		// Nothing read yet: put it on the list as Plan to Read, but never touch an
+		// entry that is already on the list in any status.
+		if (planToRead) {
+			if (manga.my_list_status) {
+				return json({
+					synced: true,
+					unchanged: true,
+					progress: manga.my_list_status.num_chapters_read ?? 0,
+					malId,
+				} satisfies MalSyncResult);
+			}
+			await updateMangaListStatus(malId, { status: 'plan_to_read' }, token);
+			return json({ synced: true, progress: 0, malId } satisfies MalSyncResult);
+		}
+
+		// Auto-mapped to a 1-chapter entry while reading chapter 2+? Almost certainly a
+		// oneshot that shares its title with the serialization — don't write, flag it.
+		if (!trusted && manga.num_chapters === 1 && chapter >= 2) {
+			return json({ synced: false, reason: 'suspect_oneshot', malId } satisfies MalSyncResult);
+		}
+
+		const currentProgress = manga.my_list_status?.num_chapters_read ?? 0;
+		if (currentProgress >= chapter) {
+			return json({ synced: true, unchanged: true, progress: currentProgress, malId } satisfies MalSyncResult);
+		}
+
+		const status = manga.num_chapters >= 1 && chapter >= manga.num_chapters ? 'completed' : 'reading';
+		const updated = await updateMangaListStatus(malId, { num_chapters_read: chapter, status }, token);
+
+		return json({
+			synced: true,
+			progress: updated.num_chapters_read ?? chapter,
+			malId,
+		} satisfies MalSyncResult);
+	} catch (err) {
+		if (isRateLimitError(err)) error(429, 'Rate limited — retry in a moment');
+		throw err;
 	}
-
-	const token = await getValidAccessToken(cookies);
-	if (!token) error(401, 'MAL session expired');
-
-	const manga = await getMangaStatus(malId, token);
-
-	// Auto-mapped to a 1-chapter entry while reading chapter 2+? Almost certainly a
-	// oneshot that shares its title with the serialization — don't write, flag it.
-	if (overrideMalId === undefined && manga.num_chapters === 1 && chapter >= 2) {
-		return json({ synced: false, reason: 'suspect_oneshot', malId } satisfies MalSyncResult);
-	}
-
-	const currentProgress = manga.my_list_status?.num_chapters_read ?? 0;
-	if (currentProgress >= chapter) {
-		return json({ synced: true, unchanged: true, progress: currentProgress, malId } satisfies MalSyncResult);
-	}
-
-	const status = manga.num_chapters >= 1 && chapter >= manga.num_chapters ? 'completed' : 'reading';
-	const updated = await updateMangaProgress(malId, chapter, status, token);
-
-	return json({
-		synced: true,
-		progress: updated.num_chapters_read ?? chapter,
-		malId,
-	} satisfies MalSyncResult);
 };

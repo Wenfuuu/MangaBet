@@ -65,6 +65,31 @@ export function clearMalOverride(slug: string): void {
 	localStorage.removeItem(malOverrideKey(slug));
 }
 
+// Auto-resolved slug→malId pairs, cached so repeat syncs skip the rate-limited
+// mapping API. Unlike overrides these are untrusted: server-side sanity checks
+// (e.g. the suspect-oneshot guard) still apply to them.
+const MAL_ID_CACHE_KEY = 'mangabet:malIdCache';
+
+export function getCachedMalId(slug: string): number | null {
+	try {
+		const cache = JSON.parse(localStorage.getItem(MAL_ID_CACHE_KEY) ?? '{}');
+		const id = cache[slug];
+		return Number.isInteger(id) && id > 0 ? id : null;
+	} catch {
+		return null;
+	}
+}
+
+export function cacheMalId(slug: string, malId: number): void {
+	try {
+		const cache = JSON.parse(localStorage.getItem(MAL_ID_CACHE_KEY) ?? '{}');
+		cache[slug] = malId;
+		localStorage.setItem(MAL_ID_CACHE_KEY, JSON.stringify(cache));
+	} catch {
+		// best-effort cache — ignore quota/parse failures
+	}
+}
+
 const READER_INDEX_KEY = 'mangabet:reader:index';
 
 export function getReaderIndex(): Record<string, number> {

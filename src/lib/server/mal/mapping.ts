@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '$lib/services/fetchRetry';
+import { RateLimitError } from '$lib/services/errors';
 import type { MalSyncPageMapping } from '$lib/types';
 
 /**
@@ -18,10 +19,13 @@ export async function resolveMapping(slug: string): Promise<MalSyncPageMapping |
 		cache.set(slug, null);
 		return null;
 	}
+	// Rate limited is NOT "unmapped" — surface it so callers can retry instead
+	// of wrongly reporting the manga as having no MAL entry.
+	if (res.status === 429) throw new RateLimitError('MAL-Sync mapping API rate limited');
 	if (!res.ok) {
 		// Transient upstream trouble — don't cache, let a later read retry.
 		console.warn(`[mal] mapping lookup failed for "${slug}": ${res.status}`);
-		return null;
+		throw new Error(`Mapping lookup failed: ${res.status}`);
 	}
 
 	const mapping: MalSyncPageMapping = await res.json();

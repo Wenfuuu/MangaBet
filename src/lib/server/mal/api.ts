@@ -1,7 +1,14 @@
 import { fetchWithRetry } from '$lib/services/fetchRetry';
+import { RateLimitError } from '$lib/services/errors';
 import type { MalMangaStatus, MalListStatus, MalReadStatus, MalSearchCandidate } from '$lib/types';
 
 const API_BASE = 'https://api.myanimelist.net/v2';
+
+function ensureMalOk(res: Response, context: string): Response {
+	if (res.status === 429) throw new RateLimitError(`${context}: MAL API rate limited`);
+	if (!res.ok) throw new Error(`${context} failed: ${res.status}`);
+	return res;
+}
 
 interface MalSearchNode {
 	id: number;
@@ -21,7 +28,7 @@ export async function searchMalManga(query: string, authHeaders: HeadersInit): P
 	const res = await fetchWithRetry(`${API_BASE}/manga?${params}`, {
 		headers: authHeaders,
 	});
-	if (!res.ok) throw new Error(`MAL search failed: ${res.status}`);
+	ensureMalOk(res, 'MAL search');
 	const body: { data?: { node: MalSearchNode }[] } = await res.json();
 	return (body.data ?? []).map(({ node }) => ({
 		id: node.id,
@@ -37,24 +44,27 @@ export async function getMangaStatus(malId: number, token: string): Promise<MalM
 	const res = await fetchWithRetry(`${API_BASE}/manga/${malId}?fields=my_list_status,num_chapters`, {
 		headers: { Authorization: `Bearer ${token}` },
 	});
-	if (!res.ok) throw new Error(`MAL manga status fetch failed: ${res.status}`);
+	ensureMalOk(res, 'MAL manga status fetch');
 	return res.json();
 }
 
-export async function updateMangaProgress(
+export async function updateMangaListStatus(
 	malId: number,
-	chapter: number,
-	status: MalReadStatus,
+	fields: { num_chapters_read?: number; status?: MalReadStatus },
 	token: string,
 ): Promise<MalListStatus> {
+	const body = new URLSearchParams();
+	if (fields.num_chapters_read !== undefined) body.set('num_chapters_read', String(fields.num_chapters_read));
+	if (fields.status !== undefined) body.set('status', fields.status);
+
 	const res = await fetchWithRetry(`${API_BASE}/manga/${malId}/my_list_status`, {
 		method: 'PATCH',
 		headers: {
 			Authorization: `Bearer ${token}`,
 			'Content-Type': 'application/x-www-form-urlencoded',
 		},
-		body: new URLSearchParams({ num_chapters_read: String(chapter), status }),
+		body,
 	});
-	if (!res.ok) throw new Error(`MAL progress update failed: ${res.status}`);
+	ensureMalOk(res, 'MAL progress update');
 	return res.json();
 }

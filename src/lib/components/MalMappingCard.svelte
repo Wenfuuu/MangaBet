@@ -89,7 +89,7 @@
 				const res = await fetch('/api/mal/sync', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ malId: oldId, chapter: 1 }),
+					body: JSON.stringify({ malId: oldId, chapter: 1, trusted: true }),
 				});
 				if (!res.ok) throw new Error(`${res.status}`);
 				showToast(`MAL entry updated — previous entry marked completed.`);

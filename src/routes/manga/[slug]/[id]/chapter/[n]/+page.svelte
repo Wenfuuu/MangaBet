@@ -7,7 +7,7 @@
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import type { ReaderMode } from '$lib/types';
-	import { touchReaderIndex, getMalOverride } from '$lib/api';
+	import { touchReaderIndex, getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
 	import { showToast } from '$lib/stores/toast.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -68,15 +68,18 @@
 		if (lastMalSyncedChapter === chapterSlugParam) return;
 
 		lastMalSyncedChapter = chapterSlugParam;
-		// User-corrected mapping (set on the manga page) rides along and beats the auto lookup.
+		// User-corrected mapping (set on the manga page) rides along and beats the auto
+		// lookup; a previously cached auto-resolution skips the rate-limited mapping API.
 		const override = getMalOverride(mangaSlug);
+		const cachedId = override ? null : getCachedMalId(mangaSlug);
 		fetch('/api/mal/sync', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				slug: mangaSlug,
 				chapter: chapterNum,
-				...(override ? { malId: override.malId } : {}),
+				...(override ? { malId: override.malId, trusted: true } : {}),
+				...(cachedId ? { malId: cachedId } : {}),
 			}),
 		})
 			.then(async (res) => {
@@ -87,6 +90,7 @@
 				}
 				if (!res.ok) throw new Error(`mal sync failed: ${res.status}`);
 				const result = await res.json();
+				if (result.synced && result.malId) cacheMalId(mangaSlug, result.malId);
 				if (result.synced && !result.unchanged) {
 					showToast(`Synced to MAL — Ch. ${result.progress}`);
 				} else if (result.reason === 'suspect_oneshot') {
