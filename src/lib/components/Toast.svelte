@@ -15,6 +15,17 @@
 			animate:flip={{ duration: 180 }}
 		>
 			<span class="msg">{toast.message}</span>
+			{#if toast.action}
+				{@const action = toast.action}
+				<button
+					type="button"
+					class="cta"
+					onclick={() => {
+						dismissToast(toast.id);
+						action.onClick();
+					}}
+				>{action.label}</button>
+			{/if}
 			<button type="button" class="close" onclick={() => dismissToast(toast.id)} aria-label="Dismiss">
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
 					<path d="M18 6 6 18M6 6l12 12" />
@@ -58,6 +69,23 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+
+	.cta {
+		background: transparent;
+		border: none;
+		padding: 4px 8px;
+		font: inherit;
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--accent, #c9a37a);
+		cursor: pointer;
+		border-radius: 6px;
+		transition: background 120ms;
+	}
+
+	.cta:hover {
+		background: rgba(201, 163, 122, 0.12);
 	}
 
 	.close {

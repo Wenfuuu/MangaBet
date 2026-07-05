@@ -7,6 +7,7 @@
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 	import NavBar from '$lib/components/NavBar.svelte';
 	import LoginToast from '$lib/components/LoginToast.svelte';
+	import MalConnectToast from '$lib/components/MalConnectToast.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	injectAnalytics({ mode: dev ? 'development' : 'production' });
@@ -26,4 +27,5 @@
 {@render children()}
 
 <LoginToast />
+<MalConnectToast />
 <Toast />

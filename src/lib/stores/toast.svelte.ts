@@ -1,7 +1,12 @@
 const AUTO_DISMISS_MS = 4000;
 const MAX_TOASTS = 4;
 
-type Toast = { id: number; message: string };
+export interface ToastAction {
+	label: string;
+	onClick: () => void;
+}
+
+type Toast = { id: number; message: string; action?: ToastAction };
 
 let toasts = $state<Toast[]>([]);
 let seq = 0;
@@ -11,15 +16,18 @@ export function getToasts(): Toast[] {
 	return toasts;
 }
 
-export function showToast(message: string): void {
+export function showToast(
+	message: string,
+	opts?: { action?: ToastAction; durationMs?: number },
+): void {
 	const id = ++seq;
-	toasts.push({ id, message });
+	toasts.push({ id, message, action: opts?.action });
 	while (toasts.length > MAX_TOASTS) {
 		dismissToast(toasts[0].id);
 	}
 	timers.set(
 		id,
-		setTimeout(() => dismissToast(id), AUTO_DISMISS_MS),
+		setTimeout(() => dismissToast(id), opts?.durationMs ?? AUTO_DISMISS_MS),
 	);
 }
 

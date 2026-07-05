@@ -4,25 +4,29 @@
 </script>
 
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { showToast } from '$lib/stores/toast.svelte';
 
 	const AUTO_DISMISS_MS = 6000;
 	const AUTH_PATHS = ['/login', '/register'];
 
-	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
+	let malConnected = $derived(Boolean(page.data?.malConnected));
 	let isAuthPage = $derived(AUTH_PATHS.some((p) => page.url.pathname.startsWith(p)));
 
 	$effect(() => {
 		if (shownThisSession) return;
-		if (isLoggedIn) return;
+		if (malConnected) return;
 		if (isAuthPage) return;
 
 		shownThisSession = true;
-		showToast('Sign in to unlock bookmarks & history.', {
+		showToast('Connect MyAnimeList to auto-sync your reading progress.', {
 			durationMs: AUTO_DISMISS_MS,
-			action: { label: 'Sign in', onClick: () => goto('/login') },
+			action: {
+				label: 'Connect',
+				// Full navigation — the endpoint 302s to MyAnimeList's consent page.
+				onClick: () =>
+					(location.href = `/api/mal/login?return=${encodeURIComponent(page.url.pathname + page.url.search)}`),
+			},
 		});
 	});
 </script>
