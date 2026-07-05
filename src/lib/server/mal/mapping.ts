@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { fetchWithRetry } from '$lib/services/fetchRetry';
 import { RateLimitError, isRateLimitError } from '$lib/services/errors';
+import { clampMalQuery } from './api';
 import type { MalSyncPageMapping } from '$lib/types';
 
 /**
@@ -16,7 +17,6 @@ const JIKAN_SEARCH_URL = (title: string) =>
 /** Official MAL search (app auth) — the strongest title matcher. q is capped at 64 chars. */
 const MAL_SEARCH_URL = (q: string) =>
 	`https://api.myanimelist.net/v2/manga?q=${encodeURIComponent(q)}&limit=10&fields=alternative_titles,media_type`;
-const MAL_Q_MAX = 64;
 
 // Warm serverless instances keep these between requests; cold starts just refetch.
 const cache = new Map<string, MalSyncPageMapping | null>();
@@ -25,6 +25,8 @@ const fallbackCache = new Map<string, ResolvedEntry | null>();
 export interface ResolvedEntry {
 	malId: number;
 	title: string;
+	/** How the title gate accepted this match — logged for source-attribution stats. */
+	grade?: MatchGrade;
 }
 
 export async function resolveMapping(slug: string): Promise<MalSyncPageMapping | null> {
@@ -165,6 +167,7 @@ async function searchJikanExact(title: string): Promise<ResolvedEntry | null> {
 	return {
 		malId: pick.mal_id,
 		title: pick.titles?.find((t) => t.type === 'Default')?.title ?? title,
+		grade: exactOnly.length > 0 ? 'exact' : 'fuzzy',
 	};
 }
 
@@ -178,13 +181,7 @@ interface MalSearchResultNode {
 async function searchMalExact(title: string, isSiblingLookup = false): Promise<ResolvedEntry | null> {
 	if (!env.MAL_CLIENT_ID) return null;
 
-	// MAL rejects queries over 64 chars ("invalid q") — truncate at a word boundary.
-	let q = title;
-	if (q.length > MAL_Q_MAX) {
-		q = q.slice(0, MAL_Q_MAX);
-		const lastSpace = q.lastIndexOf(' ');
-		if (lastSpace > 20) q = q.slice(0, lastSpace);
-	}
+	const q = clampMalQuery(title);
 
 	const res = await fetchWithRetry(MAL_SEARCH_URL(q), {
 		headers: { 'X-MAL-CLIENT-ID': env.MAL_CLIENT_ID },
@@ -210,7 +207,7 @@ async function searchMalExact(title: string, isSiblingLookup = false): Promise<R
 		// serialization is also an exact match.
 		const nonOneshot = pool.filter((n) => (n.media_type ?? '').toLowerCase() !== 'one_shot');
 		const pick = (nonOneshot.length > 0 ? nonOneshot : pool)[0];
-		return { malId: pick.id, title: pick.title };
+		return { malId: pick.id, title: pick.title, grade: exactOnly.length > 0 ? 'exact' : 'fuzzy' };
 	}
 
 	// Only a novel matched — sites host the manga adaptation, which often shares
@@ -244,7 +241,10 @@ export async function resolveMalIdWithFallback(
 
 	try {
 		const mapping = await resolveMapping(slug);
-		if (mapping?.malId) return { malId: mapping.malId, title: mapping.title };
+		if (mapping?.malId) {
+			console.info(`[mal] resolved "${slug}" -> #${mapping.malId} via malsync`);
+			return { malId: mapping.malId, title: mapping.title };
+		}
 		// definitive: malsync knows this slug and it has no MAL entry
 	} catch (err) {
 		retryable = true;
@@ -253,10 +253,19 @@ export async function resolveMalIdWithFallback(
 
 	if (title && !fallbackCache.has(slug)) {
 		let found: ResolvedEntry | null = null;
-		for (const tier of [searchMalExact, searchJikanExact]) {
+		const tiers = [
+			['mal-search', searchMalExact],
+			['jikan', searchJikanExact],
+		] as const;
+		for (const [name, tier] of tiers) {
 			try {
 				found = await tier(title);
-				if (found) break;
+				if (found) {
+					console.info(
+						`[mal] resolved "${slug}" -> #${found.malId} via ${name}${found.grade === 'fuzzy' ? ' (fuzzy)' : ''}`,
+					);
+					break;
+				}
 			} catch (err) {
 				retryable = true;
 				if (!isRateLimitError(err)) console.warn(`[mal] title fallback failed for "${title}"`, err);
@@ -268,6 +277,7 @@ export async function resolveMalIdWithFallback(
 		}
 		if (!retryable) {
 			// Every source answered definitively: this manga has no findable MAL entry.
+			console.info(`[mal] no MAL match for "${slug}" (all sources definitive)`);
 			fallbackCache.set(slug, null);
 			return { malId: null, title: null };
 		}

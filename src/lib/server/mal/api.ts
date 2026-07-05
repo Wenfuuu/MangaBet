@@ -19,9 +19,19 @@ interface MalSearchNode {
 	main_picture?: { medium?: string; large?: string };
 }
 
+/** MAL rejects search queries over 64 chars ("invalid q") — truncate at a word boundary. */
+const MAL_QUERY_MAX = 64;
+export function clampMalQuery(query: string): string {
+	if (query.length <= MAL_QUERY_MAX) return query;
+	let q = query.slice(0, MAL_QUERY_MAX);
+	const lastSpace = q.lastIndexOf(' ');
+	if (lastSpace > 20) q = q.slice(0, lastSpace);
+	return q;
+}
+
 export async function searchMalManga(query: string, authHeaders: HeadersInit): Promise<MalSearchCandidate[]> {
 	const params = new URLSearchParams({
-		q: query,
+		q: clampMalQuery(query),
 		limit: '10',
 		fields: 'media_type,num_chapters,start_date',
 	});

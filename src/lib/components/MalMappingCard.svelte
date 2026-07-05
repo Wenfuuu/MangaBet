@@ -36,8 +36,19 @@
 	let saving = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
+	// MAL search rejects queries over 64 chars, so prefill with a word-boundary
+	// truncation — the box then shows exactly what is being searched.
+	const MAL_QUERY_MAX = 64;
+	function clampQuery(t: string): string {
+		if (t.length <= MAL_QUERY_MAX) return t;
+		let q = t.slice(0, MAL_QUERY_MAX);
+		const lastSpace = q.lastIndexOf(' ');
+		if (lastSpace > 20) q = q.slice(0, lastSpace);
+		return q;
+	}
+
 	function openPicker() {
-		query = mangaName;
+		query = clampQuery(mangaName);
 		results = [];
 		selected = null;
 		markOldCompleted = false;
@@ -56,7 +67,7 @@
 		debounceTimer = setTimeout(async () => {
 			try {
 				const res = await fetch(`/api/mal/search?q=${encodeURIComponent(q.trim())}`);
-				if (res.ok) results = await res.json();
+				results = res.ok ? await res.json() : [];
 			} catch {
 				results = [];
 			} finally {
