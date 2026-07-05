@@ -1,27 +1,43 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { getToast, dismissToast } from '$lib/stores/toast.svelte';
+	import { flip } from 'svelte/animate';
+	import { getToasts, dismissToast } from '$lib/stores/toast.svelte';
 
-	let toast = $derived(getToast());
+	let toasts = $derived(getToasts());
 </script>
 
-{#if toast}
-	<div class="toast" role="status" transition:fly={{ y: 20, duration: 220 }}>
-		<span class="msg">{toast.message}</span>
-		<button type="button" class="close" onclick={dismissToast} aria-label="Dismiss">
-			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-				<path d="M18 6 6 18M6 6l12 12" />
-			</svg>
-		</button>
-	</div>
-{/if}
+<div class="stack">
+	{#each toasts as toast (toast.id)}
+		<div
+			class="toast"
+			role="status"
+			transition:fly={{ y: 20, duration: 220 }}
+			animate:flip={{ duration: 180 }}
+		>
+			<span class="msg">{toast.message}</span>
+			<button type="button" class="close" onclick={() => dismissToast(toast.id)} aria-label="Dismiss">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+					<path d="M18 6 6 18M6 6l12 12" />
+				</svg>
+			</button>
+		</div>
+	{/each}
+</div>
 
 <style>
-	.toast {
+	.stack {
 		position: fixed;
 		bottom: 18px;
 		right: 18px;
 		z-index: 60;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 8px;
+		pointer-events: none;
+	}
+
+	.toast {
 		display: flex;
 		align-items: center;
 		gap: 10px;
@@ -33,6 +49,7 @@
 		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 		font-family: 'Inter', sans-serif;
 		max-width: calc(100vw - 36px);
+		pointer-events: auto;
 	}
 
 	.msg {
@@ -62,13 +79,16 @@
 	}
 
 	@media (max-width: 480px) {
-		.toast {
+		.stack {
 			bottom: 12px;
 			left: 12px;
 			right: 12px;
+			align-items: center;
+		}
+
+		.toast {
 			width: max-content;
 			max-width: calc(100vw - 24px);
-			margin: 0 auto;
 		}
 
 		.msg {

@@ -1,22 +1,31 @@
 const AUTO_DISMISS_MS = 4000;
+const MAX_TOASTS = 4;
 
 type Toast = { id: number; message: string };
 
-let current = $state<Toast | null>(null);
-let timer: ReturnType<typeof setTimeout> | undefined;
+let toasts = $state<Toast[]>([]);
 let seq = 0;
+const timers = new Map<number, ReturnType<typeof setTimeout>>();
 
-export function getToast(): Toast | null {
-	return current;
+export function getToasts(): Toast[] {
+	return toasts;
 }
 
 export function showToast(message: string): void {
-	clearTimeout(timer);
-	current = { id: ++seq, message };
-	timer = setTimeout(() => (current = null), AUTO_DISMISS_MS);
+	const id = ++seq;
+	toasts.push({ id, message });
+	while (toasts.length > MAX_TOASTS) {
+		dismissToast(toasts[0].id);
+	}
+	timers.set(
+		id,
+		setTimeout(() => dismissToast(id), AUTO_DISMISS_MS),
+	);
 }
 
-export function dismissToast(): void {
-	clearTimeout(timer);
-	current = null;
+export function dismissToast(id: number): void {
+	const timer = timers.get(id);
+	if (timer) clearTimeout(timer);
+	timers.delete(id);
+	toasts = toasts.filter((t) => t.id !== id);
 }
