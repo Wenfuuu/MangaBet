@@ -220,6 +220,43 @@ async function searchMalExact(title: string, isSiblingLookup = false): Promise<R
 	return null;
 }
 
+/** Entry type/length via app auth — used to spot oneshot mappings. null = unknown. */
+async function isLikelyOneshot(malId: number): Promise<boolean | null> {
+	if (!env.MAL_CLIENT_ID) return null;
+	const res = await fetchWithRetry(
+		`https://api.myanimelist.net/v2/manga/${malId}?fields=media_type,num_chapters`,
+		{ headers: { 'X-MAL-CLIENT-ID': env.MAL_CLIENT_ID } },
+	);
+	if (res.status === 429) throw new RateLimitError('MAL API rate limited');
+	if (!res.ok) return null;
+	const body: { media_type?: string; num_chapters?: number } = await res.json();
+	return body.media_type === 'one_shot' || body.num_chapters === 1;
+}
+
+/**
+ * The crowd DB sometimes maps a slug to the oneshot twin of a serialization
+ * (the oneshot predates it, nobody re-points the mapping). When the mapped
+ * entry is verifiably a oneshot and the gated title search finds a different
+ * EXACT non-oneshot match, prefer that. Never breaks resolution — any doubt
+ * or failure keeps the original mapping.
+ */
+export async function crossCheckOneshotMapping(
+	malId: number,
+	title: string,
+	knownOneshot = false,
+): Promise<ResolvedEntry | null> {
+	try {
+		if (!knownOneshot && (await isLikelyOneshot(malId)) !== true) return null;
+		const alt = await searchMalExact(title);
+		if (!alt || alt.malId === malId || alt.grade !== 'exact') return null;
+		console.info(`[mal] redirected oneshot mapping #${malId} -> #${alt.malId} ("${title}")`);
+		return alt;
+	} catch (err) {
+		if (!isRateLimitError(err)) console.warn(`[mal] oneshot cross-check failed for #${malId}`, err);
+		return null;
+	}
+}
+
 /**
  * Slug mapping via MAL-Sync first (authoritative), then title search on the
  * official MAL API and Jikan, gated to exact (squashed) title matches.
@@ -230,6 +267,7 @@ async function searchMalExact(title: string, isSiblingLookup = false): Promise<R
 export async function resolveMalIdWithFallback(
 	slug: string,
 	title?: string,
+	opts?: { crossCheckOneshot?: boolean },
 ): Promise<{ malId: number | null; title: string | null }> {
 	// A previous fallback hit answers immediately without spending any budget.
 	const cachedFallback = fallbackCache.get(slug);
@@ -242,6 +280,13 @@ export async function resolveMalIdWithFallback(
 	try {
 		const mapping = await resolveMapping(slug);
 		if (mapping?.malId) {
+			if (opts?.crossCheckOneshot && title) {
+				const corrected = await crossCheckOneshotMapping(mapping.malId, title);
+				if (corrected) {
+					fallbackCache.set(slug, corrected);
+					return corrected;
+				}
+			}
 			console.info(`[mal] resolved "${slug}" -> #${mapping.malId} via malsync`);
 			return { malId: mapping.malId, title: mapping.title };
 		}

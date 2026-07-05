@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isMalConnected, getValidAccessToken } from '$lib/server/mal/oauth';
-import { resolveMalIdWithFallback } from '$lib/server/mal/mapping';
+import { resolveMalIdWithFallback, crossCheckOneshotMapping } from '$lib/server/mal/mapping';
 import { getMangaStatus, updateMangaListStatus } from '$lib/server/mal/api';
 import { isRateLimitError } from '$lib/services/errors';
 import type { MalSyncResult } from '$lib/types';
@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	try {
 		// Client-provided IDs (override or cached) skip the mapping lookup entirely.
-		const malId = providedMalId ?? (await resolveMalIdWithFallback(slug!, title)).malId;
+		let malId = providedMalId ?? (await resolveMalIdWithFallback(slug!, title)).malId;
 		if (malId === null) {
 			return json({ synced: false, reason: 'unmapped' } satisfies MalSyncResult);
 		}
@@ -44,7 +44,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const token = await getValidAccessToken(cookies);
 		if (!token) error(401, 'MAL session expired');
 
-		const manga = await getMangaStatus(malId, token);
+		let manga = await getMangaStatus(malId, token);
 
 		// Nothing read yet: put it on the list as Plan to Read, but never touch an
 		// entry that is already on the list in any status.
@@ -62,9 +62,20 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		// Auto-mapped to a 1-chapter entry while reading chapter 2+? Almost certainly a
-		// oneshot that shares its title with the serialization — don't write, flag it.
+		// oneshot that shares its title with the serialization — try redirecting to the
+		// serialization; if that fails, don't write, flag it.
 		if (!trusted && manga.num_chapters === 1 && chapter >= 2) {
-			return json({ synced: false, reason: 'suspect_oneshot', malId } satisfies MalSyncResult);
+			const corrected = title ? await crossCheckOneshotMapping(malId, title, true) : null;
+			if (!corrected) {
+				return json({ synced: false, reason: 'suspect_oneshot', malId } satisfies MalSyncResult);
+			}
+			malId = corrected.malId;
+			manga = await getMangaStatus(malId, token);
+			// The redirect target should never be a oneshot itself, but never write
+			// chapter counts to one if it somehow is.
+			if (manga.num_chapters === 1 && chapter >= 2) {
+				return json({ synced: false, reason: 'suspect_oneshot', malId } satisfies MalSyncResult);
+			}
 		}
 
 		const currentProgress = manga.my_list_status?.num_chapters_read ?? 0;

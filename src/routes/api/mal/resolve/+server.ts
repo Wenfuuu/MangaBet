@@ -14,7 +14,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	const title = url.searchParams.get('title')?.trim() || undefined;
 
 	try {
-		const resolved = await resolveMalIdWithFallback(slug, title);
+		// Low-volume path (detail-page badge) — worth the extra request to catch
+		// crowd-DB mappings that point at a oneshot twin of the serialization.
+		const resolved = await resolveMalIdWithFallback(slug, title, { crossCheckOneshot: true });
 		return json({
 			malId: resolved.malId,
 			title: resolved.title,
