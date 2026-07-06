@@ -181,7 +181,7 @@
 				{:else}
 					{#each results as c (c.id)}
 						<button
-							class="w-full flex items-center gap-3 px-5 py-2.5 bg-transparent border-none border-b border-[rgba(160,130,100,0.06)] cursor-pointer text-left hover:bg-[rgba(232,220,203,0.04)] {selected?.id === c.id ? 'bg-[rgba(201,163,122,0.12)]' : ''}"
+							class="w-full flex items-center gap-3 px-5 py-2.5 border-none border-b border-[rgba(160,130,100,0.06)] cursor-pointer text-left transition-colors duration-[120ms] {selected?.id === c.id ? 'bg-[rgba(107,67,36,0.28)]' : 'bg-transparent hover:bg-[rgba(107,67,36,0.12)]'}"
 							onclick={() => selectCandidate(c)}
 						>
 							<div class="w-9 h-13 shrink-0 rounded overflow-hidden bg-[rgba(232,220,203,0.05)]" style="height: 52px;">
