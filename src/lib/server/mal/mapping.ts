@@ -25,7 +25,7 @@ const fallbackCache = new Map<string, ResolvedEntry | null>();
 export interface ResolvedEntry {
 	malId: number;
 	title: string;
-	/** How the title gate accepted this match — logged for source-attribution stats. */
+	/** How this match was accepted ('top' = ungated search fallback) — logged for source-attribution stats. */
 	grade?: MatchGrade;
 }
 
@@ -105,7 +105,7 @@ function editDistance(a: string, b: string): number {
 	return prev[b.length];
 }
 
-type MatchGrade = 'exact' | 'fuzzy';
+type MatchGrade = 'exact' | 'fuzzy' | 'top';
 // Fuzzy tier: long titles only, digits must be identical (a sequel's "2" can
 // never sneak through), and at most ~4% of the letters may differ — enough for
 // romanization drift like "Batoru"/"Battle", far too tight for a different work.
@@ -143,17 +143,33 @@ interface JikanManga {
 	titles?: { type: string; title: string }[];
 }
 
-async function searchJikanExact(title: string): Promise<ResolvedEntry | null> {
+interface SearchResult {
+	/** Title-gated match — trusted for direct use. */
+	match: ResolvedEntry | null;
+	/** First non-novel hit in relevance order, ignoring the title gate — last-resort fallback. */
+	top: ResolvedEntry | null;
+}
+
+async function searchJikan(title: string): Promise<SearchResult> {
 	const res = await fetchWithRetry(JIKAN_SEARCH_URL(title));
 	if (res.status === 429) throw new RateLimitError('Jikan API rate limited');
 	if (!res.ok) throw new Error(`Jikan search failed: ${res.status}`);
 
 	const body: { data?: JikanManga[] } = await res.json();
-	const graded = (body.data ?? [])
-		.filter((m) => !NOVEL_TYPES.has((m.type ?? '').toLowerCase()))
+	const candidates = (body.data ?? []).filter((m) => !NOVEL_TYPES.has((m.type ?? '').toLowerCase()));
+	const first = candidates[0];
+	const top: ResolvedEntry | null = first
+		? {
+				malId: first.mal_id,
+				title: first.titles?.find((t) => t.type === 'Default')?.title ?? title,
+				grade: 'top',
+			}
+		: null;
+
+	const graded = candidates
 		.map((m) => ({ m, grade: gradeMatch(title, (m.titles ?? []).map((t) => t.title)) }))
 		.filter((x) => x.grade !== null);
-	if (graded.length === 0) return null;
+	if (graded.length === 0) return { match: null, top };
 
 	const exactOnly = graded.filter((x) => x.grade === 'exact');
 	const pool = (exactOnly.length > 0 ? exactOnly : graded).map((x) => x.m);
@@ -165,9 +181,12 @@ async function searchJikanExact(title: string): Promise<ResolvedEntry | null> {
 		(a, b) => (b.members ?? 0) - (a.members ?? 0),
 	)[0];
 	return {
-		malId: pick.mal_id,
-		title: pick.titles?.find((t) => t.type === 'Default')?.title ?? title,
-		grade: exactOnly.length > 0 ? 'exact' : 'fuzzy',
+		match: {
+			malId: pick.mal_id,
+			title: pick.titles?.find((t) => t.type === 'Default')?.title ?? title,
+			grade: exactOnly.length > 0 ? 'exact' : 'fuzzy',
+		},
+		top,
 	};
 }
 
@@ -178,8 +197,8 @@ interface MalSearchResultNode {
 	alternative_titles?: { en?: string; ja?: string; synonyms?: string[] };
 }
 
-async function searchMalExact(title: string, isSiblingLookup = false): Promise<ResolvedEntry | null> {
-	if (!env.MAL_CLIENT_ID) return null;
+async function searchMal(title: string, isSiblingLookup = false): Promise<SearchResult> {
+	if (!env.MAL_CLIENT_ID) return { match: null, top: null };
 
 	const q = clampMalQuery(title);
 
@@ -190,8 +209,13 @@ async function searchMalExact(title: string, isSiblingLookup = false): Promise<R
 	if (!res.ok) throw new Error(`MAL search failed: ${res.status}`);
 
 	const body: { data?: { node: MalSearchResultNode }[] } = await res.json();
-	const gradedAll = (body.data ?? [])
-		.map((d) => d.node)
+	const nodes = (body.data ?? []).map((d) => d.node);
+	const firstNonNovel = nodes.find((n) => !NOVEL_TYPES.has((n.media_type ?? '').toLowerCase()));
+	const top: ResolvedEntry | null = firstNonNovel
+		? { malId: firstNonNovel.id, title: firstNonNovel.title, grade: 'top' }
+		: null;
+
+	const gradedAll = nodes
 		.map((n) => {
 			const alt = n.alternative_titles ?? {};
 			return { n, grade: gradeMatch(title, [n.title, alt.en, ...(alt.synonyms ?? [])]) };
@@ -207,7 +231,10 @@ async function searchMalExact(title: string, isSiblingLookup = false): Promise<R
 		// serialization is also an exact match.
 		const nonOneshot = pool.filter((n) => (n.media_type ?? '').toLowerCase() !== 'one_shot');
 		const pick = (nonOneshot.length > 0 ? nonOneshot : pool)[0];
-		return { malId: pick.id, title: pick.title, grade: exactOnly.length > 0 ? 'exact' : 'fuzzy' };
+		return {
+			match: { malId: pick.id, title: pick.title, grade: exactOnly.length > 0 ? 'exact' : 'fuzzy' },
+			top,
+		};
 	}
 
 	// Only a novel matched — sites host the manga adaptation, which often shares
@@ -215,9 +242,14 @@ async function searchMalExact(title: string, isSiblingLookup = false): Promise<R
 	// search misses it). One re-search with the novel's own title finds it.
 	if (!isSiblingLookup) {
 		const novelHit = gradedAll.find((x) => x.grade === 'exact');
-		if (novelHit) return searchMalExact(novelHit.n.title, true);
+		if (novelHit) {
+			const sibling = await searchMal(novelHit.n.title, true);
+			// The sibling search runs on the work's canonical title, so its top
+			// hit is the better guess when neither search clears the gate.
+			return { match: sibling.match, top: sibling.top ?? top };
+		}
 	}
-	return null;
+	return { match: null, top };
 }
 
 /** Entry type/length via app auth — used to spot oneshot mappings. null = unknown. */
@@ -247,7 +279,7 @@ export async function crossCheckOneshotMapping(
 ): Promise<ResolvedEntry | null> {
 	try {
 		if (!knownOneshot && (await isLikelyOneshot(malId)) !== true) return null;
-		const alt = await searchMalExact(title);
+		const alt = (await searchMal(title)).match;
 		if (!alt || alt.malId === malId || alt.grade !== 'exact') return null;
 		console.info(`[mal] redirected oneshot mapping #${malId} -> #${alt.malId} ("${title}")`);
 		return alt;
@@ -259,7 +291,9 @@ export async function crossCheckOneshotMapping(
 
 /**
  * Slug mapping via MAL-Sync first (authoritative), then title search on the
- * official MAL API and Jikan, gated to exact (squashed) title matches.
+ * official MAL API and Jikan, gated to exact (squashed) title matches. When
+ * every gated tier misses, the search's top candidate is used as a last
+ * resort — "no MAL entry" is only reported when the searches return nothing.
  *
  * A broken tier is skipped, never fatal. Throws RateLimitError only when the
  * item stayed unresolved AND some source was busy — i.e. a retry might succeed.
@@ -298,14 +332,17 @@ export async function resolveMalIdWithFallback(
 
 	if (title && !fallbackCache.has(slug)) {
 		let found: ResolvedEntry | null = null;
+		let topCandidate: ResolvedEntry | null = null;
 		const tiers = [
-			['mal-search', searchMalExact],
-			['jikan', searchJikanExact],
+			['mal-search', searchMal],
+			['jikan', searchJikan],
 		] as const;
 		for (const [name, tier] of tiers) {
 			try {
-				found = await tier(title);
-				if (found) {
+				const { match, top } = await tier(title);
+				topCandidate ??= top;
+				if (match) {
+					found = match;
 					console.info(
 						`[mal] resolved "${slug}" -> #${found.malId} via ${name}${found.grade === 'fuzzy' ? ' (fuzzy)' : ''}`,
 					);
@@ -315,6 +352,13 @@ export async function resolveMalIdWithFallback(
 				retryable = true;
 				if (!isRateLimitError(err)) console.warn(`[mal] title fallback failed for "${title}"`, err);
 			}
+		}
+		// Ungated top candidate only when every source answered definitively — a
+		// rate-limited tier might still hold a real title-gated match, and the
+		// fallbackCache would freeze this guess in place.
+		if (!found && !retryable && topCandidate) {
+			found = topCandidate;
+			console.info(`[mal] resolved "${slug}" -> #${found.malId} via search top candidate`);
 		}
 		if (found) {
 			fallbackCache.set(slug, found);

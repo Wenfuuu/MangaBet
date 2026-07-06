@@ -5,8 +5,9 @@ import { isRateLimitError } from '$lib/services/errors';
 import type { MalMappingInfo } from '$lib/types';
 
 /**
- * Reports the automatic MAL mapping for a slug (MAL-Sync DB, Jikan title-search
- * fallback) — user overrides live client-side.
+ * Reports the automatic MAL mapping for a slug (MAL-Sync DB, title-search
+ * fallback, search top candidate as last resort) — user overrides live
+ * client-side.
  */
 export const GET: RequestHandler = async ({ url }) => {
 	const slug = url.searchParams.get('slug');

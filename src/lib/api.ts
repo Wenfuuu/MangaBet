@@ -41,7 +41,6 @@ export function saveMangaDTO(manga: { id: number; slug: string; name: string; au
 }
 
 // --- MAL mapping overrides (user corrections when the crowd-sourced mapping is wrong) ---
-
 import type { MalOverride } from '$lib/types';
 
 const malOverrideKey = (slug: string) => `mangabet:malOverride:${slug}`;
