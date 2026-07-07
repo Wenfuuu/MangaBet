@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Offline · MangaBet</title>
+		<style>
+			:root {
+				color-scheme: dark;
+			}
+			html,
+			body {
+				margin: 0;
+				height: 100%;
+				background: #0b0908;
+				color: #e8dccb;
+				font-family: 'Inter', system-ui, sans-serif;
+				-webkit-font-smoothing: antialiased;
+			}
+			.wrap {
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 1.25rem;
+				text-align: center;
+				padding: 2rem;
+			}
+			img {
+				width: 88px;
+				height: 88px;
+				border-radius: 22px;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.35rem;
+				font-weight: 600;
+			}
+			p {
+				margin: 0;
+				max-width: 28ch;
+				color: #a08c70;
+				line-height: 1.5;
+			}
+			button {
+				margin-top: 0.5rem;
+				padding: 0.65rem 1.4rem;
+				border: 1px solid rgba(201, 163, 122, 0.25);
+				border-radius: 999px;
+				background: transparent;
+				color: #c9a37a;
+				font: inherit;
+				font-weight: 500;
+				cursor: pointer;
+			}
+			button:hover {
+				background: rgba(201, 163, 122, 0.1);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<img src="/icon-192.png" alt="MangaBet" />
+			<h1>You're offline</h1>
+			<p>MangaBet can't reach the network right now. Check your connection and try again.</p>
+			<button onclick="location.reload()">Retry</button>
+		</div>
+	</body>
+</html>
