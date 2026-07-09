@@ -45,13 +45,21 @@
 			let noMatch = 0;
 			let failed = 0;
 			let rateLimited = 0;
+			let skipped = 0;
 			let sessionExpired = false;
 
 			// Diff against the MAL list first: anything already up to date is settled
 			// locally with zero requests. Only real changes and unknown mappings go out.
 			const queue: { item: BookmarkItem; attempts: number }[] = [];
 			for (const item of items) {
-				const knownId = getMalOverride(item.mangaSlug)?.malId ?? getCachedMalId(item.mangaSlug);
+				const override = getMalOverride(item.mangaSlug);
+				// User marked "not on MAL" — settle without syncing.
+				if (override?.malId === null) {
+					skipped++;
+					syncDone++;
+					continue;
+				}
+				const knownId = override?.malId ?? getCachedMalId(item.mangaSlug);
 				const entry = knownId !== null ? malList.get(knownId) : undefined;
 				if (entry) {
 					const chapter = item.viewedChapter ? Math.floor(item.viewedChapter.number) : 0;
@@ -135,6 +143,7 @@
 			}
 			const parts = [`${synced} synced`];
 			if (noMatch > 0) parts.push(`${noMatch} no MAL match`);
+			if (skipped > 0) parts.push(`${skipped} skipped (not on MAL)`);
 			if (rateLimited > 0) parts.push(`${rateLimited} rate-limited (run again in a minute)`);
 			if (failed > 0) parts.push(`${failed} failed`);
 			showToast(`MAL sync: ${parts.join(' · ')}`);

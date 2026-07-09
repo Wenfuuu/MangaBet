@@ -50,7 +50,11 @@ export function getMalOverride(slug: string): MalOverride | null {
 		const raw = localStorage.getItem(malOverrideKey(slug));
 		if (!raw) return null;
 		const parsed = JSON.parse(raw);
-		return Number.isInteger(parsed?.malId) && parsed.malId > 0 ? parsed : null;
+		// Explicit "no MAL entry" — user cleared a wrong auto-match.
+		if (parsed?.malId === null) return { malId: null, title: null };
+		return Number.isInteger(parsed?.malId) && parsed.malId > 0
+			? { malId: parsed.malId, title: parsed.title ?? null }
+			: null;
 	} catch {
 		return null;
 	}

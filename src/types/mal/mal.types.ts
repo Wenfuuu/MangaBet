@@ -61,10 +61,14 @@ export interface MalMappingInfo {
 	malUrl: string | null;
 }
 
-/** localStorage shape for a user-corrected mapping. */
+/**
+ * localStorage shape for a user-corrected mapping. A null malId is an explicit
+ * "this manga has no MAL entry" — it suppresses syncing and blocks the auto
+ * resolver (whose top-candidate fallback may have picked a wrong entry).
+ */
 export interface MalOverride {
-	malId: number;
-	title: string;
+	malId: number | null;
+	title: string | null;
 }
 
 /** One entry of the user's MAL manga list, trimmed for the mass-sync diff. */

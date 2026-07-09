@@ -71,6 +71,9 @@
 		// User-corrected mapping (set on the manga page) rides along and beats the auto
 		// lookup; a previously cached auto-resolution skips the rate-limited mapping API.
 		const override = getMalOverride(mangaSlug);
+		// User marked this manga "not on MAL" — never sync (server would otherwise
+		// re-resolve to the wrong auto-match).
+		if (override?.malId === null) return;
 		const cachedId = override ? null : getCachedMalId(mangaSlug);
 		fetch('/api/mal/sync', {
 			method: 'POST',

@@ -12,8 +12,11 @@
 	let autoMapping = $state<MalMappingInfo | null>(null);
 	let loading = $state(true);
 
-	let effectiveId = $derived(override?.malId ?? autoMapping?.malId ?? null);
-	let effectiveTitle = $derived(override?.title ?? autoMapping?.title ?? null);
+	// An override — of any kind — fully replaces the auto mapping. A cleared one
+	// (malId null) therefore suppresses the auto match rather than falling through.
+	let effectiveId = $derived(override ? override.malId : (autoMapping?.malId ?? null));
+	let effectiveTitle = $derived(override ? override.title : (autoMapping?.title ?? null));
+	let cleared = $derived(override !== null && override.malId === null);
 
 	$effect(() => {
 		override = getMalOverride(slug);
@@ -119,6 +122,14 @@
 		override = null;
 		showToast('MAL mapping reset to automatic.');
 	}
+
+	// Mark "no MAL entry" — stops the wrong auto-match (e.g. a fuzzy fallback)
+	// from syncing. Persisted as a null-id override so auto never re-applies.
+	function clearEntry() {
+		setMalOverride(slug, { malId: null, title: null });
+		override = { malId: null, title: null };
+		showToast('MAL entry cleared — this manga won’t sync.');
+	}
 </script>
 
 <div class="mt-6 inline-flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 bg-[rgba(232,220,203,0.03)] border border-[rgba(160,130,100,0.15)] rounded-lg">
@@ -135,6 +146,8 @@
 		{#if override}
 			<span class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.1em] uppercase px-1.5 py-0.5 border border-[rgba(201,163,122,0.3)] rounded">corrected</span>
 		{/if}
+	{:else if cleared}
+		<span class="font-sans text-sm text-[var(--text-faint)]">No entry — won’t sync</span>
 	{:else}
 		<span class="font-sans text-sm text-[var(--text-faint)]">No entry linked</span>
 	{/if}
@@ -142,6 +155,12 @@
 		class="font-sans text-xs text-[var(--text-soft)] bg-transparent border border-[rgba(160,130,100,0.25)] rounded-md px-2.5 py-1 cursor-pointer hover:text-[var(--text)] hover:border-[rgba(160,130,100,0.45)]"
 		onclick={openPicker}
 	>{effectiveId !== null ? 'Wrong entry?' : 'Link entry'}</button>
+	{#if effectiveId !== null}
+		<button
+			class="font-sans text-xs text-[var(--text-soft)] bg-transparent border border-[rgba(160,130,100,0.25)] rounded-md px-2.5 py-1 cursor-pointer hover:text-[var(--text)] hover:border-[rgba(160,130,100,0.45)]"
+			onclick={clearEntry}
+		>Not on MAL</button>
+	{/if}
 	{#if override}
 		<button
 			class="font-sans text-xs text-[var(--text-faint)] bg-transparent border-none cursor-pointer hover:text-[var(--text-soft)] underline"
