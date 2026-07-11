@@ -14,6 +14,7 @@ export const API_BASE_IMAGE_HEADERS = {
 } as const;
 
 export const ENDPOINTS = {
+	home: () => API_BASE_URL,
 	search: (q: string, page = 1) => `${API_BASE_URL}/home/search/json?searchword=${encodeURIComponent(q)}&page=${page}`,
 	chapters: (slug: string, offset = 0, limit = 50) => `${API_BASE_URL}/api/manga/${slug}/chapters?offset=${offset}&limit=${limit}`,
 	chapterPage: (mangaSlug: string, chapterSlug: string) => `${API_BASE_URL}/manga/${mangaSlug}/${chapterSlug}`,

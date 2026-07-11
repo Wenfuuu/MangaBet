@@ -11,13 +11,13 @@
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 pt-9 pb-24">
 	<div class="mb-9">
 		<div class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.18em] uppercase mb-2.5">
-			{data.q.trim() ? 'Search results' : 'Browse'}
+			{data.q.trim() ? 'Search results' : 'Trending'}
 		</div>
 		<h1 class="font-serif text-3xl sm:text-[44px] font-semibold text-[var(--text)] m-0 tracking-[-0.02em]">
 			{#if data.q.trim()}
 				Results for "<span class="text-[var(--accent)]">{data.q}</span>"
 			{:else}
-				The complete shelf
+				Popular right now
 			{/if}
 		</h1>
 		{#if !data.rateLimited}

@@ -12,6 +12,79 @@ export async function searchManga(query: string, page = 1, cookieHeader?: string
 	return res.json();
 }
 
+// The home page carries the 20 "popular" titles in a carousel, but those blocks
+// lack a numeric id. The "latest updates" grid lower on the same page (the
+// `itemupdate` blocks) does expose `data-id`, and its slugs overlap the popular
+// set, so we build a slug→id map from it and enrich the carousel items. A slug
+// absent from the grid falls back to id 0 (the detail route loads it by slug).
+function buildSlugIdMap(html: string): Map<string, number> {
+	const map = new Map<string, number>();
+	const start = html.indexOf('class="itemupdate');
+	if (start < 0) return map;
+	const blocks = html.slice(start).split(/<div class="itemupdate/);
+	for (const block of blocks) {
+		const idMatch = block.match(/data-id="(\d+)"/);
+		const slugMatch = block.match(/\/manga\/([^/"]+)"/);
+		if (idMatch && slugMatch && !map.has(slugMatch[1])) {
+			map.set(slugMatch[1], parseInt(idMatch[1], 10));
+		}
+	}
+	return map;
+}
+
+function parsePopularItem(block: string, slugToId: Map<string, number>): MangaSearchDTO | null {
+	// Manga link: href ends at the slug (next char is the closing quote, not "/").
+	const slugMatch = block.match(/\/manga\/([^/"]+)"\s+title="([^"]*)"/);
+	if (!slugMatch) return null;
+	const slug = slugMatch[1];
+	const name = decodeHtmlEntities(slugMatch[2].trim());
+
+	const thumbMatch = block.match(/<img[^>]*\ssrc="([^"]+)"/);
+	const thumb = thumbMatch ? thumbMatch[1] : '';
+
+	// Chapter link: href continues past the slug with a further path segment.
+	const chapterMatch = block.match(/\/manga\/[^/"]+\/[^"]+"\s+title="([^"]*)"/);
+	const chapterLatest = chapterMatch ? decodeHtmlEntities(chapterMatch[1].trim()) : '';
+
+	return {
+		id: slugToId.get(slug) ?? 0,
+		author: '',
+		name,
+		chapterLatest,
+		url: ENDPOINTS.mangaDetail(slug),
+		thumb,
+		slug,
+	};
+}
+
+export async function getPopularManga(cookieHeader?: string): Promise<MangaSearchDTO[]> {
+	const res = await fetchWithRetry(ENDPOINTS.home(), { headers: withUpstreamAuth(cookieHeader) });
+	ensureOk(res, 'Popular manga fetch');
+	const html = await res.text();
+
+	const slugToId = buildSlugIdMap(html);
+
+	const start = html.indexOf('popular-carousel-wrap');
+	if (start < 0) {
+		console.warn('[manga] getPopularManga: popular-carousel-wrap not found — upstream markup may have changed');
+		return [];
+	}
+	const chunks = html.slice(start).split(/<div class="item">/);
+
+	const items: MangaSearchDTO[] = [];
+	let unparsed = 0;
+	for (let i = 1; i < chunks.length && items.length < 20; i++) {
+		const item = parsePopularItem(chunks[i], slugToId);
+		if (item) items.push(item);
+		else unparsed++;
+	}
+	if (unparsed > 0) {
+		console.warn(`[manga] getPopularManga: ${unparsed} carousel items failed to parse — upstream markup may have changed`);
+	}
+
+	return items;
+}
+
 function parseListItem(block: string): MangaListItemDTO | null {
 	const idMatch = block.match(/data-id="(\d+)"/);
 	if (!idMatch) return null;
