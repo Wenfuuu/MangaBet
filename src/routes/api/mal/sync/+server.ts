@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { isMalConnected, getValidAccessToken } from '$lib/server/mal/oauth';
 import { resolveMalIdWithFallback, crossCheckOneshotMapping } from '$lib/server/mal/mapping';
 import { getMangaStatus, updateMangaListStatus } from '$lib/server/mal/api';
-import { isRateLimitError } from '$lib/services/errors';
+import { isRateLimitError, isUpstreamError } from '$lib/services/errors';
 import type { MalSyncResult } from '$lib/types';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -93,6 +93,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		} satisfies MalSyncResult);
 	} catch (err) {
 		if (isRateLimitError(err)) error(429, 'Rate limited — retry in a moment');
+		if (isUpstreamError(err)) error(503, 'MAL sources temporarily unavailable — retry in a moment');
 		throw err;
 	}
 };

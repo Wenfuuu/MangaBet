@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { resolveMalIdWithFallback } from '$lib/server/mal/mapping';
-import { isRateLimitError } from '$lib/services/errors';
+import { isRateLimitError, isUpstreamError } from '$lib/services/errors';
 import type { MalMappingInfo } from '$lib/types';
 
 /**
@@ -25,6 +25,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		} satisfies MalMappingInfo);
 	} catch (err) {
 		if (isRateLimitError(err)) error(429, 'Mapping lookups rate limited — retry shortly');
+		if (isUpstreamError(err)) error(503, 'Mapping sources temporarily unavailable — retry shortly');
 		throw err;
 	}
 };

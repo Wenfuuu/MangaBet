@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { fetchWithRetry } from '$lib/services/fetchRetry';
-import { RateLimitError, isRateLimitError } from '$lib/services/errors';
+import { RateLimitError, UpstreamError, isRateLimitError } from '$lib/services/errors';
 import { clampMalQuery } from './api';
 import type { MalSyncPageMapping } from '$lib/types';
 
@@ -151,7 +151,9 @@ interface SearchResult {
 }
 
 async function searchJikan(title: string): Promise<SearchResult> {
-	const res = await fetchWithRetry(JIKAN_SEARCH_URL(title));
+	// Send a bounded query — over-long titles make Jikan slow/error-prone. Grading
+	// below still runs against the full title, so match quality is unaffected.
+	const res = await fetchWithRetry(JIKAN_SEARCH_URL(clampMalQuery(title)));
 	if (res.status === 429) throw new RateLimitError('Jikan API rate limited');
 	if (!res.ok) throw new Error(`Jikan search failed: ${res.status}`);
 
@@ -295,8 +297,11 @@ export async function crossCheckOneshotMapping(
  * every gated tier misses, the search's top candidate is used as a last
  * resort — "no MAL entry" is only reported when the searches return nothing.
  *
- * A broken tier is skipped, never fatal. Throws RateLimitError only when the
- * item stayed unresolved AND some source was busy — i.e. a retry might succeed.
+ * A broken tier is skipped, never fatal. Only throws when the item stayed
+ * unresolved AND a source was unusable: RateLimitError when a source was merely
+ * busy (429), UpstreamError when one was broken/down (5xx, timeout, network).
+ * Keeping the two apart matters — a source being down must neither masquerade as
+ * a 429 nor discard a good top candidate a healthy tier already produced.
  */
 export async function resolveMalIdWithFallback(
 	slug: string,
@@ -307,9 +312,19 @@ export async function resolveMalIdWithFallback(
 	const cachedFallback = fallbackCache.get(slug);
 	if (cachedFallback) return cachedFallback;
 
-	// True whenever a source failed to give a definitive answer — makes the
-	// overall result "retry later" instead of a cacheable "unmapped".
-	let retryable = false;
+	// A source can fail two ways, and they must stay separate: `rateLimited` (429)
+	// means a retry may find the answer; `upstreamError` (5xx/timeout/network)
+	// means the source is broken. Either one makes the overall result "retry
+	// later" rather than a cacheable "unmapped".
+	let rateLimited = false;
+	let upstreamError = false;
+	const noteFailure = (err: unknown, context: string) => {
+		if (isRateLimitError(err)) rateLimited = true;
+		else {
+			upstreamError = true;
+			console.warn(context, err);
+		}
+	};
 
 	try {
 		const mapping = await resolveMapping(slug);
@@ -326,8 +341,7 @@ export async function resolveMalIdWithFallback(
 		}
 		// definitive: malsync knows this slug and it has no MAL entry
 	} catch (err) {
-		retryable = true;
-		if (!isRateLimitError(err)) console.warn(`[mal] malsync lookup failed for "${slug}"`, err);
+		noteFailure(err, `[mal] malsync lookup failed for "${slug}"`);
 	}
 
 	if (title && !fallbackCache.has(slug)) {
@@ -349,22 +363,29 @@ export async function resolveMalIdWithFallback(
 					break;
 				}
 			} catch (err) {
-				retryable = true;
-				if (!isRateLimitError(err)) console.warn(`[mal] title fallback failed for "${title}"`, err);
+				noteFailure(err, `[mal] title fallback failed for "${title}"`);
 			}
 		}
-		// Ungated top candidate only when every source answered definitively — a
-		// rate-limited tier might still hold a real title-gated match, and the
-		// fallbackCache would freeze this guess in place.
-		if (!found && !retryable && topCandidate) {
-			found = topCandidate;
-			console.info(`[mal] resolved "${slug}" -> #${found.malId} via search top candidate`);
-		}
+
+		// A gated (exact/fuzzy) match is authoritative — cache and return it.
 		if (found) {
 			fallbackCache.set(slug, found);
 			return found;
 		}
-		if (!retryable) {
+
+		// No gated match: fall back to a search's ungated top candidate if any tier
+		// offered one. A *later* tier being busy or down must never discard a usable
+		// guess a healthy tier already produced — that was the bug behind the
+		// misreported 429s. Only freeze the guess in the cache when every source
+		// answered definitively, so a retry can still upgrade it to a real
+		// title-gated match once a temporarily busy/down tier recovers.
+		if (topCandidate) {
+			if (!rateLimited && !upstreamError) fallbackCache.set(slug, topCandidate);
+			console.info(`[mal] resolved "${slug}" -> #${topCandidate.malId} via search top candidate`);
+			return topCandidate;
+		}
+
+		if (!rateLimited && !upstreamError) {
 			// Every source answered definitively: this manga has no findable MAL entry.
 			console.info(`[mal] no MAL match for "${slug}" (all sources definitive)`);
 			fallbackCache.set(slug, null);
@@ -372,6 +393,9 @@ export async function resolveMalIdWithFallback(
 		}
 	}
 
-	if (retryable) throw new RateLimitError('Mapping sources busy — retry shortly');
+	// Nothing usable, and a source was unavailable — signal a retry, reporting the
+	// real cause so callers surface the right status (429 busy vs 503 down).
+	if (rateLimited) throw new RateLimitError('Mapping sources busy — retry shortly');
+	if (upstreamError) throw new UpstreamError('Mapping sources unavailable — retry shortly');
 	return { malId: null, title: null };
 }
