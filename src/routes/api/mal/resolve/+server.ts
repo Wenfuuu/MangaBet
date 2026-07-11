@@ -16,8 +16,13 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	try {
 		// Low-volume path (detail-page badge) — worth the extra request to catch
-		// crowd-DB mappings that point at a oneshot twin of the serialization.
-		const resolved = await resolveMalIdWithFallback(slug, title, { crossCheckOneshot: true });
+		// crowd-DB mappings that point at a oneshot twin of the serialization. This
+		// is display only, so the ungated top candidate is welcome here; the write
+		// path (sync) deliberately excludes it to avoid mis-syncing a loose guess.
+		const resolved = await resolveMalIdWithFallback(slug, title, {
+			crossCheckOneshot: true,
+			allowTopCandidate: true,
+		});
 		return json({
 			malId: resolved.malId,
 			title: resolved.title,

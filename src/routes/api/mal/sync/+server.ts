@@ -36,6 +36,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	try {
 		// Client-provided IDs (override or cached) skip the mapping lookup entirely.
+		// Auto-resolution here writes to the user's MAL list, so it must stay on
+		// confident matches (malsync mapping or a gated title match) — the ungated
+		// top candidate is intentionally NOT allowed, to avoid syncing the wrong
+		// entry. Users confirm a loose guess via the mapping picker instead.
 		let malId = providedMalId ?? (await resolveMalIdWithFallback(slug!, title)).malId;
 		if (malId === null) {
 			return json({ synced: false, reason: 'unmapped' } satisfies MalSyncResult);

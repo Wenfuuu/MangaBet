@@ -293,9 +293,11 @@ export async function crossCheckOneshotMapping(
 
 /**
  * Slug mapping via MAL-Sync first (authoritative), then title search on the
- * official MAL API and Jikan, gated to exact (squashed) title matches. When
- * every gated tier misses, the search's top candidate is used as a last
- * resort — "no MAL entry" is only reported when the searches return nothing.
+ * official MAL API and Jikan, gated to exact/fuzzy (squashed) title matches.
+ * When every gated tier misses, the search's ungated top candidate is offered
+ * as a last resort ONLY when `allowTopCandidate` is set — it is a loose guess
+ * fit for display (the mapping badge), never for auto-writing to a user's MAL
+ * list. "No MAL entry" is only reported when the searches return nothing.
  *
  * A broken tier is skipped, never fatal. Only throws when the item stayed
  * unresolved AND a source was unusable: RateLimitError when a source was merely
@@ -306,11 +308,19 @@ export async function crossCheckOneshotMapping(
 export async function resolveMalIdWithFallback(
 	slug: string,
 	title?: string,
-	opts?: { crossCheckOneshot?: boolean },
+	opts?: { crossCheckOneshot?: boolean; allowTopCandidate?: boolean },
 ): Promise<{ malId: number | null; title: string | null }> {
-	// A previous fallback hit answers immediately without spending any budget.
+	// A previous resolution answers immediately without spending any budget. But
+	// the cache is shared with the display path, so an ungated 'top' guess it
+	// stored must not be handed to a write caller (no allowTopCandidate) — report
+	// unmapped instead of syncing the guess.
 	const cachedFallback = fallbackCache.get(slug);
-	if (cachedFallback) return cachedFallback;
+	if (cachedFallback) {
+		if (cachedFallback.grade === 'top' && !opts?.allowTopCandidate) {
+			return { malId: null, title: null };
+		}
+		return cachedFallback;
+	}
 
 	// A source can fail two ways, and they must stay separate: `rateLimited` (429)
 	// means a retry may find the answer; `upstreamError` (5xx/timeout/network)
@@ -373,13 +383,18 @@ export async function resolveMalIdWithFallback(
 			return found;
 		}
 
-		// No gated match: fall back to a search's ungated top candidate if any tier
-		// offered one. A *later* tier being busy or down must never discard a usable
-		// guess a healthy tier already produced — that was the bug behind the
-		// misreported 429s. Only freeze the guess in the cache when every source
-		// answered definitively, so a retry can still upgrade it to a real
-		// title-gated match once a temporarily busy/down tier recovers.
+		// No gated match: a search may still have an ungated top candidate.
 		if (topCandidate) {
+			// Display callers accept the loose guess; write callers (sync) must not —
+			// auto-mapping to it could sync progress to the wrong MAL entry. Report
+			// unmapped for them, but never cache that as a definitive "no entry": the
+			// shared cache also feeds the display path, which *does* surface it.
+			if (!opts?.allowTopCandidate) return { malId: null, title: null };
+			// A *later* tier being busy or down must never discard a usable guess a
+			// healthy tier already produced — that was the bug behind the misreported
+			// 429s. Only freeze the guess in the cache when every source answered
+			// definitively, so a retry can still upgrade it to a real title-gated
+			// match once a temporarily busy/down tier recovers.
 			if (!rateLimited && !upstreamError) fallbackCache.set(slug, topCandidate);
 			console.info(`[mal] resolved "${slug}" -> #${topCandidate.malId} via search top candidate`);
 			return topCandidate;
