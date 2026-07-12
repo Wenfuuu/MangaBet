@@ -14,9 +14,14 @@ const MAPPING_URL = (slug: string) => `https://api.malsync.moe/page/MangaNato/${
 const JIKAN_SEARCH_URL = (title: string) =>
 	`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=10`;
 
-/** Official MAL search (app auth) — the strongest title matcher. q is capped at 64 chars. */
+/**
+ * Official MAL search (app auth) — the strongest title matcher. q is capped at
+ * 64 chars. nsfw=true is mandatory: MAL hides adult-flagged entries ('gray'/
+ * 'black') from search by default, and manga sites host plenty of them — without
+ * it those titles resolve to a wrong SFW namesake or not at all.
+ */
 const MAL_SEARCH_URL = (q: string) =>
-	`https://api.myanimelist.net/v2/manga?q=${encodeURIComponent(q)}&limit=10&fields=alternative_titles,media_type`;
+	`https://api.myanimelist.net/v2/manga?q=${encodeURIComponent(q)}&limit=10&nsfw=true&fields=alternative_titles,media_type`;
 
 // Warm serverless instances keep these between requests; cold starts just refetch.
 const cache = new Map<string, MalSyncPageMapping | null>();

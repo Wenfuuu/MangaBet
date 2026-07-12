@@ -33,6 +33,7 @@ export async function searchMalManga(query: string, authHeaders: HeadersInit): P
 	const params = new URLSearchParams({
 		q: clampMalQuery(query),
 		limit: '10',
+		nsfw: 'true',
 		fields: 'media_type,num_chapters,start_date',
 	});
 	const res = await fetchWithRetry(`${API_BASE}/manga?${params}`, {
