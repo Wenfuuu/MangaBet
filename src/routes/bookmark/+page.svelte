@@ -11,6 +11,39 @@
 	let { data }: { data: PageData } = $props();
 	let removingIds = $state(new Set<number>());
 
+	// fetch all bookmark and filter client-side.
+	let query = $state('');
+	let searchFocused = $state(false);
+	let allBookmarks = $state<BookmarkItem[] | null>(null);
+	let loadingAll = $state(false);
+
+	let trimmed = $derived(query.trim().toLowerCase());
+	let searching = $derived(trimmed.length > 0);
+	let results = $derived(
+		searching && allBookmarks
+			? allBookmarks.filter((b) => b.title.toLowerCase().includes(trimmed))
+			: [],
+	);
+
+	async function loadAllBookmarks() {
+		if (allBookmarks || loadingAll) return;
+		loadingAll = true;
+		try {
+			const res = await fetch('/api/bookmarks');
+			if (res.status === 401) {
+				showToast('Session expired — please log in again.');
+				return;
+			}
+			if (!res.ok) throw new Error(`bookmarks fetch failed: ${res.status}`);
+			allBookmarks = await res.json();
+		} catch (err) {
+			console.warn('[bookmark-search] failed to load bookmarks', err);
+			showToast('Search unavailable — could not load your bookmarks.');
+		} finally {
+			loadingAll = false;
+		}
+	}
+
 	let syncing = $state(false);
 	let syncDone = $state(0);
 	let syncTotal = $state(0);
@@ -168,8 +201,43 @@
 		</h1>
 		{#if !data.rateLimited}
 			<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
-				{data.bookmarks.totalStories} {data.bookmarks.totalStories === 1 ? 'title' : 'titles'} saved
+				{#if searching}
+					{results.length} {results.length === 1 ? 'match' : 'matches'} for "{query.trim()}"
+				{:else}
+					{data.bookmarks.totalStories} {data.bookmarks.totalStories === 1 ? 'title' : 'titles'} saved
+				{/if}
 			</div>
+
+			{#if data.bookmarks.totalStories > 0}
+				<div class="mt-4 max-w-[380px]">
+					<div class="flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg transition-all duration-150 {searchFocused ? 'bg-[var(--surface-2)] border-[rgba(160,130,100,0.45)]' : 'bg-[var(--surface)] border-[var(--border)]'}">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" class="shrink-0">
+							<circle cx="11" cy="11" r="7" />
+							<path d="m20 20-3.5-3.5" />
+						</svg>
+						<input
+							bind:value={query}
+							onfocus={() => { searchFocused = true; loadAllBookmarks(); }}
+							onblur={() => (searchFocused = false)}
+							placeholder="Search your bookmarks…"
+							class="flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-sm text-[var(--text)] placeholder:text-[var(--text-faint)]"
+						/>
+						{#if searching}
+							<button
+								type="button"
+								aria-label="Clear search"
+								onclick={() => (query = '')}
+								class="shrink-0 grid place-items-center bg-transparent border-none cursor-pointer text-[var(--text-faint)] hover:text-[var(--text)] transition-colors duration-150"
+							>
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="18" y1="6" x2="6" y2="18" />
+									<line x1="6" y1="6" x2="18" y2="18" />
+								</svg>
+							</button>
+						{/if}
+					</div>
+				</div>
+			{/if}
 			{#if page.data.malConnected && data.bookmarks.totalStories > 0}
 				<button
 					class="inline-flex items-center gap-2 mt-4 px-4 py-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg font-sans text-sm text-[var(--text-soft)] cursor-pointer hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait"
@@ -198,6 +266,27 @@
 
 	{#if data.rateLimited}
 		<RateLimitNotice />
+	{:else if searching}
+		{#if loadingAll && !allBookmarks}
+			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">Searching…</div>
+		{:else if results.length === 0}
+			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
+				No bookmarks match "{query.trim()}".
+			</div>
+		{:else}
+			<div class="flex flex-col gap-3 max-w-[760px] mx-auto">
+				{#each results as b (b.mangaId)}
+					{#if !removingIds.has(b.mangaId)}
+						<BookmarkCard
+							bookmark={b}
+							onclick={() => goto(`/manga/${b.mangaSlug}/${b.mangaId}`)}
+							onRemoveStart={() => removingIds.add(b.mangaId)}
+							onRemoveError={() => removingIds.delete(b.mangaId)}
+						/>
+					{/if}
+				{/each}
+			</div>
+		{/if}
 	{:else if data.bookmarks.items.length === 0}
 		<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
 			{data.bookmarks.page > 1 ? 'No bookmarks on this page.' : 'No bookmarks yet.'}
@@ -219,7 +308,7 @@
 		{/key}
 	{/if}
 
-	{#if !data.rateLimited && data.bookmarks.totalPages > 1}
+	{#if !data.rateLimited && !searching && data.bookmarks.totalPages > 1}
 		<div class="mt-12 flex items-center justify-center gap-3">
 			{#if data.bookmarks.page > 1}
 				<a
