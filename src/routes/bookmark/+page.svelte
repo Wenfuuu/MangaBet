@@ -17,13 +17,76 @@
 	let allBookmarks = $state<BookmarkItem[] | null>(null);
 	let loadingAll = $state(false);
 
+	type BookmarkFilter = 'all' | 'no-history' | 'updated' | 'caught-up';
+	const filterOptions: { value: BookmarkFilter; label: string }[] = [
+		{ value: 'all', label: 'All' },
+		{ value: 'no-history', label: 'No history' },
+		{ value: 'updated', label: 'New chapters' },
+		{ value: 'caught-up', label: 'Caught up' },
+	];
+	let filter = $state<BookmarkFilter>('all');
+
 	let trimmed = $derived(query.trim().toLowerCase());
 	let searching = $derived(trimmed.length > 0);
+	// The filter spans the whole library like search, so any non-default filter
+	// (or an active search) switches from the paginated view to the client set.
+	let filterActive = $derived(searching || filter !== 'all');
+	let activeFilterLabel = $derived(filterOptions.find((o) => o.value === filter)?.label ?? 'All');
+
+	function matchesFilter(b: BookmarkItem): boolean {
+		switch (filter) {
+			case 'no-history':
+				return !b.viewedChapter;
+			case 'updated':
+				return !!(b.viewedChapter && b.currentChapter && b.currentChapter.number > b.viewedChapter.number);
+			case 'caught-up':
+				return !!(b.viewedChapter && (!b.currentChapter || b.viewedChapter.number >= b.currentChapter.number));
+			default:
+				return true;
+		}
+	}
+
+	// lastUpdated is a mix of absolute "YYYY-MM-DD HH:MM" and relative "N unit ago"
+	// strings, so normalize both to epoch ms before sorting — lexical comparison
+	// can't order "50 minute ago" against "5 hour ago" or against an absolute date.
+	const UNIT_MS: Record<string, number> = {
+		second: 1_000,
+		minute: 60_000,
+		hour: 3_600_000,
+		day: 86_400_000,
+		week: 604_800_000,
+		month: 2_592_000_000, // ~30d — coarse but fine for ordering
+		year: 31_536_000_000, // ~365d
+	};
+
+	function parseUpdatedAt(raw: string): number {
+		if (!raw) return -Infinity;
+		if (/just now/i.test(raw)) return Date.now();
+		const rel = raw.match(/(\d+|an?)\s+(second|minute|hour|day|week|month|year)s?\s+ago/i);
+		if (rel) {
+			const n = /^\d+$/.test(rel[1]) ? parseInt(rel[1], 10) : 1; // "a"/"an" → 1
+			return Date.now() - n * UNIT_MS[rel[2].toLowerCase()];
+		}
+		const abs = Date.parse(raw.replace(' ', 'T'));
+		return Number.isNaN(abs) ? -Infinity : abs; // unknown format sinks
+	}
+
+	function byRecentlyUpdated(a: BookmarkItem, b: BookmarkItem): number {
+		return parseUpdatedAt(b.lastUpdated) - parseUpdatedAt(a.lastUpdated);
+	}
+
 	let results = $derived(
-		searching && allBookmarks
-			? allBookmarks.filter((b) => b.title.toLowerCase().includes(trimmed))
+		filterActive && allBookmarks
+			? allBookmarks
+					.filter((b) => (!trimmed || b.title.toLowerCase().includes(trimmed)) && matchesFilter(b))
+					.sort(byRecentlyUpdated)
 			: [],
 	);
+
+	function setFilter(f: BookmarkFilter) {
+		filter = f;
+		if (f !== 'all') loadAllBookmarks();
+	}
 
 	async function loadAllBookmarks() {
 		if (allBookmarks || loadingAll) return;
@@ -201,8 +264,8 @@
 		</h1>
 		{#if !data.rateLimited}
 			<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
-				{#if searching}
-					{results.length} {results.length === 1 ? 'match' : 'matches'} for "{query.trim()}"
+				{#if filterActive}
+					{results.length} {results.length === 1 ? 'result' : 'results'}{searching ? ` for "${query.trim()}"` : ''}
 				{:else}
 					{data.bookmarks.totalStories} {data.bookmarks.totalStories === 1 ? 'title' : 'titles'} saved
 				{/if}
@@ -236,6 +299,20 @@
 							</button>
 						{/if}
 					</div>
+
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each filterOptions as opt}
+							<button
+								type="button"
+								onclick={() => setFilter(opt.value)}
+								class="px-3 py-1.5 rounded-full font-sans text-xs cursor-pointer border transition-colors duration-150 {filter === opt.value
+									? 'bg-[rgba(201,163,122,0.15)] text-[var(--accent)] border-[rgba(201,163,122,0.4)]'
+									: 'bg-[rgba(232,220,203,0.05)] text-[var(--text-soft)] border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--border-strong)]'}"
+							>
+								{opt.label}
+							</button>
+						{/each}
+					</div>
 				</div>
 			{/if}
 			{#if page.data.malConnected && data.bookmarks.totalStories > 0}
@@ -266,12 +343,16 @@
 
 	{#if data.rateLimited}
 		<RateLimitNotice />
-	{:else if searching}
+	{:else if filterActive}
 		{#if loadingAll && !allBookmarks}
-			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">Searching…</div>
+			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">Loading…</div>
 		{:else if results.length === 0}
 			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
-				No bookmarks match "{query.trim()}".
+				{#if searching}
+					No bookmarks match "{query.trim()}"{filter !== 'all' ? ` under "${activeFilterLabel}"` : ''}.
+				{:else}
+					Nothing under "{activeFilterLabel}".
+				{/if}
 			</div>
 		{:else}
 			<div class="flex flex-col gap-3 max-w-[760px] mx-auto">
@@ -308,7 +389,7 @@
 		{/key}
 	{/if}
 
-	{#if !data.rateLimited && !searching && data.bookmarks.totalPages > 1}
+	{#if !data.rateLimited && !filterActive && data.bookmarks.totalPages > 1}
 		<div class="mt-12 flex items-center justify-center gap-3">
 			{#if data.bookmarks.page > 1}
 				<a
