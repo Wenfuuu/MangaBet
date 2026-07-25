@@ -31,7 +31,10 @@ export const ENDPOINTS = {
 	addHistory: () => `${API_BASE_URL}/action/add-history`,
 } as const;
 
-export const proxyImage = (thumb: string) => `/api/image?url=${encodeURIComponent(thumb)}`;
+// `retry` is a cache-buster: the proxy ignores it, but changing it gives the browser
+// a new src so a failed image actually re-requests instead of reusing the dead response.
+export const proxyImage = (thumb: string, retry = 0) =>
+	`/api/image?url=${encodeURIComponent(thumb)}${retry ? `&r=${retry}` : ''}`;
 
 export function mangaDetailUrl(manga: { id: number; slug: string }): string {
 	return `/manga/${manga.slug}/${manga.id}`;

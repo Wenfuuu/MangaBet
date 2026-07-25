@@ -1,10 +1,68 @@
 <script lang="ts">
 	import type { Chapter, ReaderMode } from '$lib/types';
 	import ChapterEndPanel from './ChapterEndPanel.svelte';
+	import ReaderPageFallback from './ReaderPageFallback.svelte';
 	import { proxyImage } from '$lib/api';
 
 	let wideScrollEl = $state<HTMLDivElement | undefined>(undefined);
-	let failedPages = $state(new Set<number>());
+
+	// Per-page load recovery. The CDN drops requests when a chapter fires all its
+	// images at once, so a failed page retries a few times on a backoff before
+	// giving up and offering a manual retry.
+	const MAX_AUTO_RETRIES = 3;
+	const RETRY_DELAYS_MS = [400, 1200, 3000];
+
+	let attempts = $state<number[]>([]);
+	let reloadKeys = $state<number[]>([]);
+	let givenUp = $state<boolean[]>([]);
+	const retryTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
+	function pageStatus(i: number): 'ok' | 'retrying' | 'failed' {
+		if (givenUp[i]) return 'failed';
+		if ((attempts[i] ?? 0) > 0) return 'retrying';
+		return 'ok';
+	}
+
+	function srcFor(url: string, i: number): string {
+		return proxyImage(url, reloadKeys[i] ?? 0);
+	}
+
+	function handleError(i: number) {
+		const attempt = (attempts[i] ?? 0) + 1;
+		attempts[i] = attempt;
+
+		if (attempt > MAX_AUTO_RETRIES) {
+			givenUp[i] = true;
+			return;
+		}
+
+		const delay = RETRY_DELAYS_MS[attempt - 1] ?? 3000;
+		retryTimers.set(
+			i,
+			setTimeout(() => {
+				retryTimers.delete(i);
+				reloadKeys[i] = (reloadKeys[i] ?? 0) + 1;
+			}, delay)
+		);
+	}
+
+	function handleLoad(i: number) {
+		if (attempts[i]) attempts[i] = 0;
+		if (givenUp[i]) givenUp[i] = false;
+	}
+
+	function retryNow(i: number) {
+		clearTimeout(retryTimers.get(i));
+		retryTimers.delete(i);
+		attempts[i] = 0;
+		givenUp[i] = false;
+		reloadKeys[i] = (reloadKeys[i] ?? 0) + 1;
+	}
+
+	$effect(() => () => {
+		for (const timer of retryTimers.values()) clearTimeout(timer);
+		retryTimers.clear();
+	});
 
 	$effect(() => {
 		if (!wideScrollEl) return;
@@ -132,14 +190,28 @@
 	<div class="long-wrap">
 		<div class="long-inner">
 			{#each imageUrls as url, i}
+				{@const status = pageStatus(i)}
+				<!-- The img stays mounted while the fallback shows: a display:none image
+				     still loads, so its onload can clear the error state. -->
 				<img
 					class="long-img"
-					class:failed={failedPages.has(i)}
-					src={proxyImage(url)}
+					class:hidden={status !== 'ok'}
+					src={srcFor(url, i)}
 					alt="Page {i + 1}"
 					loading="lazy"
-					onerror={() => (failedPages = new Set(failedPages).add(i))}
+					onerror={() => handleError(i)}
+					onload={() => handleLoad(i)}
 				/>
+				{#if status !== 'ok'}
+					<ReaderPageFallback
+						pageNumber={i + 1}
+						{status}
+						attempt={attempts[i] ?? 0}
+						maxAttempts={MAX_AUTO_RETRIES}
+						variant="long"
+						onretry={() => retryNow(i)}
+					/>
+				{/if}
 			{/each}
 			<ChapterEndPanel {mangaSlug} {mangaId} {nextChapter} />
 		</div>
@@ -148,9 +220,28 @@
 	<div class="wide-wrap">
 		<div class="wide-scroll" bind:this={wideScrollEl}>
 			<div class="wide-inner" class:manga={mangaMode}>
-				{#each imageUrls as url}
+				{#each imageUrls as url, i}
+					{@const status = pageStatus(i)}
 					<div class="wide-page">
-						<img class="page-img" src={proxyImage(url)} alt="" loading="lazy" />
+						<img
+							class="page-img"
+							class:hidden={status !== 'ok'}
+							src={srcFor(url, i)}
+							alt=""
+							loading="lazy"
+							onerror={() => handleError(i)}
+							onload={() => handleLoad(i)}
+						/>
+						{#if status !== 'ok'}
+							<ReaderPageFallback
+								pageNumber={i + 1}
+								{status}
+								attempt={attempts[i] ?? 0}
+								maxAttempts={MAX_AUTO_RETRIES}
+								variant="fill"
+								onretry={() => retryNow(i)}
+							/>
+						{/if}
 					</div>
 				{/each}
 				<div class="wide-end">
@@ -173,12 +264,27 @@
 			class:manga={mode === 'double' && mangaMode}
 		>
 			{#each imageUrls as url, i}
-				<img
-					class="page-img"
-					class:active={i === page - 1 || (mode === 'double' && i === page)}
-					src={proxyImage(url)}
-					alt="Page {i + 1}"
-				/>
+				{@const status = pageStatus(i)}
+				<div class="page-slot" class:active={i === page - 1 || (mode === 'double' && i === page)}>
+					<img
+						class="page-img"
+						class:hidden={status !== 'ok'}
+						src={srcFor(url, i)}
+						alt="Page {i + 1}"
+						onerror={() => handleError(i)}
+						onload={() => handleLoad(i)}
+					/>
+					{#if status !== 'ok'}
+						<ReaderPageFallback
+							pageNumber={i + 1}
+							{status}
+							attempt={attempts[i] ?? 0}
+							maxAttempts={MAX_AUTO_RETRIES}
+							variant="fill"
+							onretry={() => retryNow(i)}
+						/>
+					{/if}
+				</div>
 			{/each}
 		</div>
 	</div>
@@ -190,16 +296,10 @@
 		display: block;
 	}
 
-	.long-img.failed {
-		min-height: 240px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px dashed rgba(255, 255, 255, 0.2);
-		color: rgba(255, 255, 255, 0.6);
-		font-size: 0.875rem;
-		text-align: center;
+	/* Kept in the DOM so the load can still resolve behind the fallback. */
+	.long-img.hidden,
+	.page-img.hidden {
+		display: none;
 	}
 
 	.page-img {
@@ -322,17 +422,19 @@
 		flex-direction: row-reverse;
 	}
 
-	.single-page .page-img,
-	.double-spread .page-img {
+	/* Visibility lives on the slot, not the img — the fallback is a child component
+	   and scoped selectors cannot reach inside it. */
+	.page-slot {
 		display: none;
+		width: 100%;
+		height: 100%;
 	}
 
-	.single-page .page-img.active,
-	.double-spread .page-img.active {
+	.page-slot.active {
 		display: block;
 	}
 
-	.double-spread .page-img {
+	.double-spread .page-slot {
 		flex: 1;
 		min-width: 0;
 	}
