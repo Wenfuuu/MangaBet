@@ -78,6 +78,13 @@
 		goto(`/search?q=${encodeURIComponent(query.trim())}`);
 	}
 
+	function clearSearch() {
+		query = '';
+		results = [];
+		highlightedIndex = -1;
+		inputEl?.focus();
+	}
+
 	function navigateToManga(manga: MangaSearchDTO) {
 		focused = false;
 		query = '';
@@ -188,7 +195,22 @@
 						placeholder="Search titles…"
 						class="flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-sm text-[var(--text)] placeholder:text-[var(--text-faint)]"
 					/>
-					<kbd class="hidden sm:block font-mono text-[11px] text-[var(--text-faint)] px-1.5 py-0.5 border border-[rgba(160,130,100,0.2)] rounded">⌘K</kbd>
+					{#if query}
+						<!-- type="button" — a bare button inside the form would submit the search. -->
+						<button
+							type="button"
+							class="shrink-0 grid place-items-center w-5 h-5 rounded-full bg-transparent border-none cursor-pointer text-[var(--text-faint)] hover:text-[var(--text)] hover:bg-[rgba(232,220,203,0.08)] transition-colors duration-[120ms]"
+							onclick={clearSearch}
+							aria-label="Clear search"
+							title="Clear search"
+						>
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+								<path d="M18 6 6 18M6 6l12 12" />
+							</svg>
+						</button>
+					{:else}
+						<kbd class="hidden sm:block font-mono text-[11px] text-[var(--text-faint)] px-1.5 py-0.5 border border-[rgba(160,130,100,0.2)] rounded">⌘K</kbd>
+					{/if}
 				</div>
 			</form>
 
