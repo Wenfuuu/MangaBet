@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import MangaListCard from '$lib/components/MangaListCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
@@ -34,10 +33,7 @@
 		{#key data.latest.page}
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[1100px] mx-auto">
 				{#each data.latest.items as m (m.id)}
-					<MangaListCard
-						manga={m}
-						onclick={() => goto(`/manga/${m.slug}/${m.id}`)}
-					/>
+					<MangaListCard manga={m} href="/manga/{m.slug}/{m.id}" />
 				{/each}
 			</div>
 		{/key}

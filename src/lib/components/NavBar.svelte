@@ -13,8 +13,8 @@
 	let accountWrapEl: HTMLDivElement | undefined = $state(undefined);
 	let results = $state<MangaSearchDTO[]>([]);
 	let highlightedIndex = $state(-1);
-	let cardRefs = $state<(HTMLButtonElement | undefined)[]>([]);
-	let footerRef = $state<HTMLButtonElement | undefined>(undefined);
+	let cardRefs = $state<(HTMLAnchorElement | undefined)[]>([]);
+	let footerRef = $state<HTMLAnchorElement | undefined>(undefined);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
@@ -78,6 +78,12 @@
 		goto(`/search?q=${encodeURIComponent(query.trim())}`);
 	}
 
+	// A modified click opens a new tab, so the drawer stays open behind it.
+	function closeMenu(e: MouseEvent) {
+		if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+		menuOpen = false;
+	}
+
 	function clearSearch() {
 		query = '';
 		results = [];
@@ -85,11 +91,21 @@
 		inputEl?.focus();
 	}
 
+	// Keyboard (Enter) path — the mouse path goes through the anchors below.
 	function navigateToManga(manga: MangaSearchDTO) {
 		focused = false;
 		query = '';
 		saveMangaDTO(manga);
 		goto(mangaDetailUrl(manga));
+	}
+
+	// Side effects only — the anchor handles navigation, so never preventDefault here.
+	// A modified click opens a new tab, so the dropdown stays put.
+	function onResultClick(e: MouseEvent, manga: MangaSearchDTO) {
+		saveMangaDTO(manga);
+		if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+		focused = false;
+		query = '';
 	}
 
 	function handleKey(e: KeyboardEvent) {
@@ -150,32 +166,29 @@
 <header class="sticky top-0 z-50 bg-[rgba(11,9,8,0.88)] backdrop-blur-[14px] border-b border-[var(--border-faint)]">
 	<div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-3.5 flex items-center gap-4 sm:gap-8">
 		<!-- Logo -->
-		<button
-			class="flex items-center gap-2.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
-			onclick={() => goto('/')}
-		>
+		<a class="flex items-center gap-2.5 shrink-0" href="/">
 			<span class="hidden sm:block font-serif font-semibold text-xl text-[var(--text)] tracking-[-0.01em]">MangaBet</span>
-		</button>
+		</a>
 
 		<!-- Nav links — desktop -->
 		<nav class="hidden sm:flex gap-1">
-			<button
-				class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'home' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
-				onclick={() => goto('/')}
-			>Home</button>
-			<button
-				class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
-				onclick={() => goto('/search')}
-			>Browse</button>
-			<button
-				class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'latest' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
-				onclick={() => goto('/latest')}
-			>Latest Manga</button>
+			<a
+				class="px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'home' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
+				href="/"
+			>Home</a>
+			<a
+				class="px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
+				href="/search"
+			>Browse</a>
+			<a
+				class="px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'latest' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
+				href="/latest"
+			>Latest Manga</a>
 			{#if isLoggedIn}
-				<button
-					class="bg-transparent border-none cursor-pointer px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'bookmarks' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
-					onclick={() => goto('/bookmark')}
-				>Bookmarks</button>
+				<a
+					class="px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'bookmarks' ? 'text-[var(--text)]' : 'text-[var(--text-faint)] hover:text-[var(--text)]'}"
+					href="/bookmark"
+				>Bookmarks</a>
 			{/if}
 		</nav>
 
@@ -217,14 +230,12 @@
 			{#if focused && results.length > 0}
 				<div class="absolute top-[calc(100%+6px)] left-0 right-0 bg-[var(--surface)] border border-[rgba(160,130,100,0.18)] rounded-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-y-auto max-h-[460px] z-10">
 					{#each results as m, i}
-						<button
+						<a
 							bind:this={cardRefs[i]}
-							class="flex items-center gap-3 w-full px-3 py-2.5 border-none cursor-pointer text-left hover:bg-[rgba(107,67,36,0.12)] transition-colors duration-[120ms] {i === highlightedIndex ? 'bg-[rgba(107,67,36,0.12)]' : 'bg-transparent'}"
+							class="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-[rgba(107,67,36,0.12)] transition-colors duration-[120ms] {i === highlightedIndex ? 'bg-[rgba(107,67,36,0.12)]' : 'bg-transparent'}"
+							href={mangaDetailUrl(m)}
 							onmouseenter={() => (highlightedIndex = i)}
-							onmousedown={(e) => {
-								e.preventDefault();
-								navigateToManga(m);
-							}}
+							onclick={(e) => onResultClick(e, m)}
 						>
 							<img class="w-[38px] h-14 shrink-0 rounded-[3px] object-fill bg-[var(--surface)]" src={proxyImage(m.thumb)} alt={m.name} loading="lazy" />
 							<div class="flex-1 min-w-0">
@@ -232,19 +243,20 @@
 								<div class="font-sans text-xs text-[var(--text-faint)] mt-0.5">{m.author}</div>
 							</div>
 							<span class="font-mono text-[11px] text-[var(--text-soft)] shrink-0">{m.chapterLatest}</span>
-						</button>
+						</a>
 					{/each}
-					<button
+					<a
 						bind:this={footerRef}
-						class="block w-full px-3 py-3 border-none border-t border-[rgba(160,130,100,0.12)] cursor-pointer font-sans text-[13px] text-[var(--accent)] text-center {highlightedIndex === results.length ? 'bg-[rgba(107,67,36,0.12)]' : 'bg-[rgba(107,67,36,0.06)]'}"
+						class="block w-full px-3 py-3 border-t border-[rgba(160,130,100,0.12)] font-sans text-[13px] text-[var(--accent)] text-center {highlightedIndex === results.length ? 'bg-[rgba(107,67,36,0.12)]' : 'bg-[rgba(107,67,36,0.06)]'}"
+						href="/search?q={encodeURIComponent(query.trim())}"
 						onmouseenter={() => (highlightedIndex = results.length)}
-						onmousedown={(e) => {
-							e.preventDefault();
-							submitSearch();
+						onclick={(e) => {
+							if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+							focused = false;
 						}}
 					>
 						See all results for "{query}" →
-					</button>
+					</a>
 				</div>
 			{/if}
 		</div>
@@ -272,14 +284,16 @@
 							onclick={logout}
 						>Logout</button>
 					{:else}
-						<button
-							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)]"
-							onclick={() => { accountOpen = false; goto('/login'); }}
-						>Login</button>
-						<button
-							class="w-full text-left px-3.5 py-2.5 bg-transparent border-none cursor-pointer font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)] border-t border-[rgba(160,130,100,0.12)]"
-							onclick={() => { accountOpen = false; goto('/register'); }}
-						>Register</button>
+						<a
+							class="block w-full text-left px-3.5 py-2.5 font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)]"
+							href="/login"
+							onclick={() => (accountOpen = false)}
+						>Login</a>
+						<a
+							class="block w-full text-left px-3.5 py-2.5 font-sans text-sm text-[var(--text)] hover:bg-[rgba(107,67,36,0.12)] border-t border-[rgba(160,130,100,0.12)]"
+							href="/register"
+							onclick={() => (accountOpen = false)}
+						>Register</a>
 					{/if}
 					{#if malConnected}
 						<button
@@ -315,23 +329,27 @@
 	<!-- Mobile nav drawer -->
 	{#if menuOpen}
 		<nav class="sm:hidden border-t border-[var(--border-faint)] px-4 py-3 flex flex-col gap-1">
-			<button
-				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'home' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
-				onclick={() => { menuOpen = false; goto('/'); }}
-			>Home</button>
-			<button
-				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
-				onclick={() => { menuOpen = false; goto('/search'); }}
-			>Browse</button>
-			<button
-				class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'latest' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
-				onclick={() => { menuOpen = false; goto('/latest'); }}
-			>Latest Manga</button>
+			<a
+				class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium {activePage === 'home' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+				href="/"
+				onclick={closeMenu}
+			>Home</a>
+			<a
+				class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium {activePage === 'browse' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+				href="/search"
+				onclick={closeMenu}
+			>Browse</a>
+			<a
+				class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium {activePage === 'latest' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+				href="/latest"
+				onclick={closeMenu}
+			>Latest Manga</a>
 			{#if isLoggedIn}
-				<button
-					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer {activePage === 'bookmarks' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
-					onclick={() => { menuOpen = false; goto('/bookmark'); }}
-				>Bookmarks</button>
+				<a
+					class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium {activePage === 'bookmarks' ? 'text-[var(--text)]' : 'text-[var(--text-faint)]'}"
+					href="/bookmark"
+					onclick={closeMenu}
+				>Bookmarks</a>
 			{/if}
 			{#if isLoggedIn}
 				<button
@@ -339,14 +357,16 @@
 					onclick={() => { menuOpen = false; logout(); }}
 				>Logout</button>
 			{:else}
-				<button
-					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
-					onclick={() => { menuOpen = false; goto('/login'); }}
-				>Login</button>
-				<button
-					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-[var(--text-faint)]"
-					onclick={() => { menuOpen = false; goto('/register'); }}
-				>Register</button>
+				<a
+					class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium text-[var(--text-faint)]"
+					href="/login"
+					onclick={closeMenu}
+				>Login</a>
+				<a
+					class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium text-[var(--text-faint)]"
+					href="/register"
+					onclick={closeMenu}
+				>Register</a>
 			{/if}
 			{#if malConnected}
 				<button

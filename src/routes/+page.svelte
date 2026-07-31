@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { mangaDetailUrl, getReaderIndex, removeFromReaderIndex } from '$lib/api';
 	import ContinueCard from '$lib/components/ContinueCard.svelte';
 	import type { ContinueItem } from '$lib/types';
@@ -100,7 +99,7 @@
 					<ContinueCard
 						manga={item.manga}
 						chapterSlug={item.chapterSlug}
-						onclick={() => goto(`${mangaDetailUrl(item.manga)}/chapter/${item.chapterSlug}`)}
+						href="{mangaDetailUrl(item.manga)}/chapter/{item.chapterSlug}"
 						onRemove={() => removeItem(item.manga.slug)}
 					/>
 				{/each}
@@ -125,10 +124,10 @@
 						Start reading a manga and it'll appear here so you can jump back in.
 					</p>
 				</div>
-				<button
-					class="px-5 py-3 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-[13px] font-semibold cursor-pointer shrink-0"
-					onclick={() => goto('/search')}
-				>Browse manga →</button>
+				<a
+					class="px-5 py-3 bg-[var(--accent)] text-[var(--accent-on)] rounded-lg font-sans text-[13px] font-semibold shrink-0"
+					href="/search"
+				>Browse manga →</a>
 			</div>
 		{/if}
 	</section>

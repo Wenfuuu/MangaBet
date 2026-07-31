@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
 	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
@@ -116,30 +115,30 @@
 				<div class="flex flex-wrap gap-3 items-center mt-6">
 						{#await data.progress then progress}
 							{#if progress}
-								<button
-									class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
-									onclick={() => goto(chapterUrl({ slug: progress.slug }))}
+								<a
+									class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] rounded-lg font-sans text-sm font-semibold"
+									href={chapterUrl({ slug: progress.slug })}
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 										<polygon points="5,3 19,12 5,21" />
 									</svg>
 									Continue · Ch. {progress.number}
-								</button>
+								</a>
 							{/if}
 						{/await}
-					<button
-						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-lg font-sans text-sm font-semibold cursor-pointer"
-						onclick={() => goto(chapterUrl(firstChapter))}
+					<a
+						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-[var(--accent)] text-[var(--accent-on)] rounded-lg font-sans text-sm font-semibold"
+						href={chapterUrl(firstChapter)}
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 							<polygon points="5,3 19,12 5,21" />
 						</svg>
 						Start from Ch. {firstChapter.number}
-					</button>
-					<button
-						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium cursor-pointer"
-						onclick={() => goto(chapterUrl(chapters[0]))}
-					>Latest chapter</button>
+					</a>
+					<a
+						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-[rgba(232,220,203,0.05)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-lg font-sans text-sm font-medium"
+						href={chapterUrl(chapters[0])}
+					>Latest chapter</a>
 					{#if isBookmarked !== null}
 						<form
 							method="POST"
@@ -222,11 +221,7 @@
 
 		<div class="border border-[var(--border-faint)] rounded-[10px] overflow-hidden">
 			{#each visible as ch, i}
-				<ChapterRow
-					{ch}
-					isLast={i === visible.length - 1}
-					onclick={() => goto(chapterUrl(ch))}
-				/>
+				<ChapterRow {ch} isLast={i === visible.length - 1} href={chapterUrl(ch)} />
 			{/each}
 		</div>
 	</div>

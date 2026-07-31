@@ -2,15 +2,14 @@
 	import type { Chapter } from '$lib/types';
 	import { fmtDate } from '$lib/utils';
 
-	let { ch, isLast = false, onclick }: { ch: Chapter; isLast?: boolean; onclick: () => void } =
-		$props();
+	let { ch, isLast = false, href }: { ch: Chapter; isLast?: boolean; href: string } = $props();
 </script>
 
-<button
-	class="flex items-center gap-5 px-5 py-4 bg-transparent border-none cursor-pointer text-left transition-colors duration-150 w-full hover:bg-[rgba(201,163,122,0.06)] {isLast
+<a
+	class="flex items-center gap-5 px-5 py-4 text-left transition-colors duration-150 w-full hover:bg-[rgba(201,163,122,0.06)] {isLast
 		? ''
 		: 'border-b border-[rgba(160,130,100,0.08)]'}"
-	{onclick}
+	{href}
 >
 	<div class="w-12 shrink-0 font-mono text-xs font-medium text-[var(--accent)]">
 		#{ch.number}
@@ -31,4 +30,4 @@
 	<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-quiet)" stroke-width="2" class="shrink-0">
 		<polyline points="9 18 15 12 9 6" />
 	</svg>
-</button>
+</a>

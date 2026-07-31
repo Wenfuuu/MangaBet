@@ -5,12 +5,12 @@
 	let {
 		manga,
 		chapterSlug,
-		onclick,
+		href,
 		onRemove,
 	}: {
 		manga: MangaSearchDTO;
 		chapterSlug: string;
-		onclick: () => void;
+		href: string;
 		onRemove: () => void;
 	} = $props();
 </script>
@@ -18,11 +18,7 @@
 <div
 	class="relative flex gap-4 p-4 bg-[var(--surface)] border border-[var(--border-faint)] rounded-[10px] transition-all duration-200 w-full hover:bg-[var(--surface-2)] hover:border-[var(--border-strong)]"
 >
-	<button
-		class="absolute inset-0 cursor-pointer bg-transparent border-none p-0"
-		aria-label={manga.name}
-		{onclick}
-	></button>
+	<a class="absolute inset-0" aria-label={manga.name} {href}></a>
 
 	<div class="w-[76px] h-[114px] shrink-0 rounded-[4px] overflow-hidden bg-[var(--surface)] z-[1] pointer-events-none">
 		<img class="w-full h-full object-fill" src={proxyImage(manga.thumb)} alt={manga.name} loading="lazy" />

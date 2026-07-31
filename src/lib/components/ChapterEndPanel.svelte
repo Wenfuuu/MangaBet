@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Chapter } from '$lib/types';
-	import { goto } from '$app/navigation';
 
 	let {
 		mangaSlug,
@@ -18,18 +17,18 @@
 	<h3 class="font-serif text-2xl font-medium text-[var(--text)] m-0 mb-5">Take a breath.</h3>
 	<div class="flex gap-3 justify-center flex-wrap">
 		{#if nextChapter}
-			<button
-				class="px-5 py-3 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-md font-sans text-[13px] font-semibold cursor-pointer"
-				onclick={() => goto(`/manga/${mangaSlug}/${mangaId}/chapter/${nextChapter!.slug}`)}
+			<a
+				class="px-5 py-3 bg-[var(--accent)] text-[var(--accent-on)] rounded-md font-sans text-[13px] font-semibold"
+				href="/manga/{mangaSlug}/{mangaId}/chapter/{nextChapter.slug}"
 			>
 				Next chapter →
-			</button>
+			</a>
 		{/if}
-		<button
-			class="px-5 py-3 bg-[rgba(232,220,203,0.08)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-md font-sans text-[13px] font-medium cursor-pointer"
-			onclick={() => goto(`/manga/${mangaSlug}/${mangaId}`)}
+		<a
+			class="px-5 py-3 bg-[rgba(232,220,203,0.08)] text-[var(--text)] border border-[rgba(232,220,203,0.15)] rounded-md font-sans text-[13px] font-medium"
+			href="/manga/{mangaSlug}/{mangaId}"
 		>
 			Back to chapters
-		</button>
+		</a>
 	</div>
 </div>

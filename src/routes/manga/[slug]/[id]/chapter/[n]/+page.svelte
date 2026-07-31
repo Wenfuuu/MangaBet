@@ -240,20 +240,20 @@
 	<!-- Top bar -->
 	<div class="top-bar" style="transform: {chromeVisible ? 'translateY(0)' : 'translateY(-100%)'};">
 		<div class="bar-inner">
-			<button class="back-btn" onclick={() => goto(backUrl)}>
+			<a class="back-btn" href={backUrl}>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="15 18 9 12 15 6" />
 				</svg>
 				Back
-			</button>
+			</a>
 
-			<button class="back-btn" onclick={() => goto('/')}>
+			<a class="back-btn" href="/">
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M3 10.5 12 3l9 7.5" />
 					<path d="M5 9.5V21h14V9.5" />
 				</svg>
 				Home
-			</button>
+			</a>
 
 			<div class="bar-divider"></div>
 
@@ -290,19 +290,17 @@
 						</div>
 						<div class="dd-list" bind:this={chapterListEl}>
 							{#each filteredChapters as c}
-								<button
+								<a
 									class="dd-chapter-row"
 									class:current={c.number === chapterNum}
-									onclick={() => {
-										chapterMenuOpen = false;
-										goToChapter(c);
-									}}
+									href="/manga/{mangaSlug}/{mangaId}/chapter/{c.slug}"
+									onclick={() => (chapterMenuOpen = false)}
 								>
 									<span class="dd-chapter-num" class:current-num={c.number === chapterNum}>
 										#{c.number}
 									</span>
 									<span class="dd-chapter-title">{c.title}</span>
-								</button>
+								</a>
 							{:else}
 								<div class="dd-empty">No chapters match "{chapterFilter}"</div>
 							{/each}
@@ -468,6 +466,8 @@
 		flex-shrink: 0;
 	}
 
+	.back-btn { text-decoration: none; }
+
 	.back-btn:hover { color: var(--text); }
 
 	.bar-divider {
@@ -588,6 +588,7 @@
 		border-bottom: 1px solid rgba(160, 130, 100, 0.06);
 		cursor: pointer;
 		text-align: left;
+		text-decoration: none;
 		color: var(--text-soft);
 	}
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { PageData } from './$types';
 	import type { BookmarkItem, MalSyncResult, MalListEntry } from '$lib/types';
@@ -360,7 +359,7 @@
 					{#if !removingIds.has(b.mangaId)}
 						<BookmarkCard
 							bookmark={b}
-							onclick={() => goto(`/manga/${b.mangaSlug}/${b.mangaId}`)}
+							href="/manga/{b.mangaSlug}/{b.mangaId}"
 							onRemoveStart={() => removingIds.add(b.mangaId)}
 							onRemoveError={() => removingIds.delete(b.mangaId)}
 						/>
@@ -379,7 +378,7 @@
 					{#if !removingIds.has(b.mangaId)}
 						<BookmarkCard
 							bookmark={b}
-							onclick={() => goto(`/manga/${b.mangaSlug}/${b.mangaId}`)}
+							href="/manga/{b.mangaSlug}/{b.mangaId}"
 							onRemoveStart={() => removingIds.add(b.mangaId)}
 							onRemoveError={() => removingIds.delete(b.mangaId)}
 						/>

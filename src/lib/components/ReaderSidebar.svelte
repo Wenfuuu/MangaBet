@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Chapter, ReaderMode } from '$lib/types';
-	import { goto } from '$app/navigation';
 
 	let {
 		mangaSlug,
@@ -177,19 +176,17 @@
 			</div>
 			<div class="chapter-list">
 				{#each allChapters as c}
-					<button
+					<a
 						class="chapter-row"
 						class:current={c.number === currentCh.number}
-						onclick={() => {
-							onclose();
-							goto(`/manga/${mangaSlug}/${mangaId}/chapter/${c.slug}`);
-						}}
+						href="/manga/{mangaSlug}/{mangaId}/chapter/{c.slug}"
+						onclick={onclose}
 					>
 						<span class="chapter-num" class:current-num={c.number === currentCh.number}>
 							#{c.number}
 						</span>
 						<span class="chapter-title">{c.title}</span>
-					</button>
+					</a>
 				{/each}
 			</div>
 		</section>
@@ -499,6 +496,7 @@
 		border-bottom: 1px solid rgba(160, 130, 100, 0.06);
 		cursor: pointer;
 		text-align: left;
+		text-decoration: none;
 	}
 
 	.chapter-row:last-child {
