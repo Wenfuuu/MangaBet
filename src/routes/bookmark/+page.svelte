@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { SvelteSet } from 'svelte/reactivity';
 	import type { PageData } from './$types';
 	import type { BookmarkItem, MalSyncResult, MalListEntry } from '$lib/types';
 	import BookmarkCard from '$lib/components/BookmarkCard.svelte';
@@ -8,7 +9,21 @@
 	import { showToast } from '$lib/stores/toast.svelte';
 
 	let { data }: { data: PageData } = $props();
-	let removingIds = $state(new Set<number>());
+	// SvelteSet, not $state(new Set()) — $state only deep-proxies plain objects and
+	// arrays, so .add()/.delete() on a plain Set never notifies the template.
+	let removingIds = new SvelteSet<number>();
+
+	function onRemoved(b: BookmarkItem) {
+		// The client-side cache backing search/filter isn't touched by the form's
+		// load rerun, so prune it here or the card returns the moment you search.
+		if (allBookmarks) allBookmarks = allBookmarks.filter((x) => x.mangaId !== b.mangaId);
+		showToast(`Removed "${b.title}" from bookmarks.`);
+	}
+
+	function onRemoveFailed(b: BookmarkItem) {
+		removingIds.delete(b.mangaId);
+		showToast(`Couldn't remove "${b.title}" — try again.`);
+	}
 
 	// fetch all bookmark and filter client-side.
 	let query = $state('');
@@ -361,7 +376,8 @@
 							bookmark={b}
 							href="/manga/{b.mangaSlug}/{b.mangaId}"
 							onRemoveStart={() => removingIds.add(b.mangaId)}
-							onRemoveError={() => removingIds.delete(b.mangaId)}
+							onRemoveSuccess={() => onRemoved(b)}
+							onRemoveError={() => onRemoveFailed(b)}
 						/>
 					{/if}
 				{/each}
@@ -380,7 +396,8 @@
 							bookmark={b}
 							href="/manga/{b.mangaSlug}/{b.mangaId}"
 							onRemoveStart={() => removingIds.add(b.mangaId)}
-							onRemoveError={() => removingIds.delete(b.mangaId)}
+							onRemoveSuccess={() => onRemoved(b)}
+							onRemoveError={() => onRemoveFailed(b)}
 						/>
 					{/if}
 				{/each}

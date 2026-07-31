@@ -7,11 +7,13 @@
 		bookmark,
 		href,
 		onRemoveStart,
+		onRemoveSuccess,
 		onRemoveError,
 	}: {
 		bookmark: BookmarkItem;
 		href: string;
 		onRemoveStart?: () => void;
+		onRemoveSuccess?: () => void;
 		onRemoveError?: () => void;
 	} = $props();
 
@@ -52,7 +54,9 @@
 		use:enhance={() => {
 			onRemoveStart?.();
 			return async ({ result, update }) => {
-				if (result.type === 'failure') onRemoveError?.();
+				// 'error' is an unhandled server exception — as much a failure as 'failure'.
+				if (result.type === 'failure' || result.type === 'error') onRemoveError?.();
+				else onRemoveSuccess?.();
 				await update({ reset: false });
 			};
 		}}
