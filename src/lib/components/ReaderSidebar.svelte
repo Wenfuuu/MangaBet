@@ -31,6 +31,17 @@
 
 	let mangaModeApplies = $derived(mode === 'double' || mode === 'wide');
 
+	let chapterListEl = $state<HTMLDivElement>();
+
+	$effect(() => {
+		const row = chapterListEl?.querySelector('.chapter-row.current');
+		if (!chapterListEl || !row) return;
+		const listBox = chapterListEl.getBoundingClientRect();
+		const rowBox = row.getBoundingClientRect();
+		chapterListEl.scrollTop +=
+			rowBox.top - listBox.top - (chapterListEl.clientHeight - rowBox.height) / 2;
+	});
+
 	const modes: { id: ReaderMode; label: string; desc: string }[] = [
 		{ id: 'long', label: 'Long strip', desc: 'Vertical scroll, webtoon style' },
 		{ id: 'single', label: 'Single page', desc: 'One page at a time' },
@@ -174,7 +185,7 @@
 				<div class="section-label">Chapter</div>
 				<div class="chapter-count">{allChapters.length} total</div>
 			</div>
-			<div class="chapter-list">
+			<div class="chapter-list" bind:this={chapterListEl}>
 				{#each allChapters as c}
 					<a
 						class="chapter-row"
