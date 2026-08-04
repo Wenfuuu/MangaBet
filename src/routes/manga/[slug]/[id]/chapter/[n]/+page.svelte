@@ -267,6 +267,7 @@
 				>
 					<div class="title-text">
 						<div class="manga-title">{data.mangaName}</div>
+						<div class="chapter-compact">Chapter {chapterNum}</div>
 						<div class="chapter-sub">{data.chapterTitle}</div>
 					</div>
 					<svg class="title-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -652,6 +653,11 @@
 		margin-top: 1px;
 	}
 
+	/* Mobile-only stand-in for the manga title — see the 640px block */
+	.chapter-compact {
+		display: none;
+	}
+
 	.bar-spacer { flex: 1; }
 
 	.progress-info {
@@ -770,12 +776,20 @@
 			display: none;
 		}
 
-		.chapter-sub {
+		.chapter-sub,
+		.manga-title {
 			display: none;
 		}
 
-		.manga-title {
+		.chapter-compact {
+			display: block;
+			font-family: 'Source Serif 4', serif;
 			font-size: 13px;
+			font-weight: 500;
+			color: var(--text);
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		.page-count {
