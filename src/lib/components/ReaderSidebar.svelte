@@ -33,6 +33,10 @@
 
 	let chapterListEl = $state<HTMLDivElement>();
 
+	let numColCh = $derived(
+		allChapters.reduce((max, c) => Math.max(max, `#${c.number}`.length), 3),
+	);
+
 	$effect(() => {
 		const row = chapterListEl?.querySelector('.chapter-row.current');
 		if (!chapterListEl || !row) return;
@@ -185,7 +189,7 @@
 				<div class="section-label">Chapter</div>
 				<div class="chapter-count">{allChapters.length} total</div>
 			</div>
-			<div class="chapter-list" bind:this={chapterListEl}>
+			<div class="chapter-list" bind:this={chapterListEl} style="--num-col: {numColCh}ch">
 				{#each allChapters as c}
 					<a
 						class="chapter-row"
@@ -522,7 +526,7 @@
 		font-family: 'JetBrains Mono', monospace;
 		font-size: 11px;
 		color: var(--text-quiet);
-		min-width: 32px;
+		width: var(--num-col, 32px);
 		flex-shrink: 0;
 	}
 

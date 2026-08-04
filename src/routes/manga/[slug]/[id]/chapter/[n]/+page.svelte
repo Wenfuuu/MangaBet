@@ -121,6 +121,10 @@
 	let titleWrapEl = $state<HTMLDivElement>();
 	let chapterListEl = $state<HTMLDivElement>();
 
+	let numColCh = $derived(
+		allChapters.reduce((max, c) => Math.max(max, `#${c.number}`.length), 3),
+	);
+
 	let filteredChapters = $derived(
 		chapterFilter.trim()
 			? allChapters.filter((c) => {
@@ -289,7 +293,7 @@
 							/>
 							<span class="dd-count">{filteredChapters.length} / {allChapters.length}</span>
 						</div>
-						<div class="dd-list" bind:this={chapterListEl}>
+						<div class="dd-list" bind:this={chapterListEl} style="--num-col: {numColCh}ch">
 							{#each filteredChapters as c}
 								<a
 									class="dd-chapter-row"
@@ -611,7 +615,7 @@
 		font-family: 'JetBrains Mono', monospace;
 		font-size: 11px;
 		color: var(--text-quiet);
-		min-width: 36px;
+		width: var(--num-col, 36px);
 		flex-shrink: 0;
 	}
 
