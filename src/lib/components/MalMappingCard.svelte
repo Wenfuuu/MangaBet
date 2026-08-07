@@ -132,59 +132,59 @@
 	}
 </script>
 
-<div class="mt-6 inline-flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 bg-[rgba(232,220,203,0.03)] border border-[rgba(160,130,100,0.15)] rounded-lg">
-	<span class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.14em] uppercase">MyAnimeList</span>
+<div class="mt-6 inline-flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 bg-fg/3 border border-edge/15 rounded-lg">
+	<span class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase">MyAnimeList</span>
 	{#if loading && !override}
-		<span class="font-sans text-sm text-[var(--text-faint)]">Checking…</span>
+		<span class="font-sans text-sm text-fg-faint">Checking…</span>
 	{:else if effectiveId !== null}
 		<a
-			class="font-sans text-sm text-[var(--accent)] hover:underline"
+			class="font-sans text-sm text-accent hover:underline"
 			href="https://myanimelist.net/manga/{effectiveId}"
 			target="_blank"
 			rel="noopener noreferrer"
 		>{effectiveTitle ?? `#${effectiveId}`} ↗</a>
 		{#if override}
-			<span class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.1em] uppercase px-1.5 py-0.5 border border-[rgba(201,163,122,0.3)] rounded">corrected</span>
+			<span class="font-mono text-[10px] text-fg-faint tracking-[0.1em] uppercase px-1.5 py-0.5 border border-accent/30 rounded">corrected</span>
 		{/if}
 	{:else if cleared}
-		<span class="font-sans text-sm text-[var(--text-faint)]">No entry — won’t sync</span>
+		<span class="font-sans text-sm text-fg-faint">No entry — won’t sync</span>
 	{:else}
-		<span class="font-sans text-sm text-[var(--text-faint)]">No entry linked</span>
+		<span class="font-sans text-sm text-fg-faint">No entry linked</span>
 	{/if}
 	<button
-		class="font-sans text-xs text-[var(--text-soft)] bg-transparent border border-[rgba(160,130,100,0.25)] rounded-md px-2.5 py-1 cursor-pointer hover:text-[var(--text)] hover:border-[rgba(160,130,100,0.45)]"
+		class="font-sans text-xs text-fg-soft bg-transparent border border-edge/25 rounded-md px-2.5 py-1 cursor-pointer hover:text-fg hover:border-edge/45"
 		onclick={openPicker}
 	>{effectiveId !== null ? 'Wrong entry?' : 'Link entry'}</button>
 	{#if effectiveId !== null}
 		<button
-			class="font-sans text-xs text-[var(--text-soft)] bg-transparent border border-[rgba(160,130,100,0.25)] rounded-md px-2.5 py-1 cursor-pointer hover:text-[var(--text)] hover:border-[rgba(160,130,100,0.45)]"
+			class="font-sans text-xs text-fg-soft bg-transparent border border-edge/25 rounded-md px-2.5 py-1 cursor-pointer hover:text-fg hover:border-edge/45"
 			onclick={clearEntry}
 		>Not on MAL</button>
 	{/if}
 	{#if override}
 		<button
-			class="font-sans text-xs text-[var(--text-faint)] bg-transparent border-none cursor-pointer hover:text-[var(--text-soft)] underline"
+			class="font-sans text-xs text-fg-faint bg-transparent border-none cursor-pointer hover:text-fg-soft underline"
 			onclick={resetToAuto}
 		>reset</button>
 	{/if}
 	{#if !malConnected && effectiveId !== null}
-		<span class="font-sans text-xs text-[var(--text-faint)]">— connect MAL in the account menu to auto-sync progress</span>
+		<span class="font-sans text-xs text-fg-faint">— connect MAL in the account menu to auto-sync progress</span>
 	{/if}
 </div>
 
 {#if pickerOpen}
 	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 z-50 bg-[rgba(11,9,8,0.8)] backdrop-blur-sm grid place-items-center p-4"
+		class="fixed inset-0 z-50 bg-ink/80 backdrop-blur-sm grid place-items-center p-4"
 		onclick={(e) => { if (e.target === e.currentTarget) pickerOpen = false; }}
 	>
-		<div class="w-full max-w-[520px] max-h-[80vh] flex flex-col bg-[#0f0c0a] border border-[var(--border)] rounded-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden">
-			<div class="px-5 pt-4 pb-3 border-b border-[var(--border-faint)]">
-				<div class="font-serif text-lg text-[var(--text)]">Pick the correct MAL entry</div>
-				<div class="font-sans text-xs text-[var(--text-faint)] mt-0.5">Progress for this manga will sync to the entry you choose.</div>
+		<div class="w-full max-w-[520px] max-h-[80vh] flex flex-col bg-ink-raised border border-edge/15 rounded-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden">
+			<div class="px-5 pt-4 pb-3 border-b border-edge/10">
+				<div class="font-serif text-lg text-fg">Pick the correct MAL entry</div>
+				<div class="font-sans text-xs text-fg-faint mt-0.5">Progress for this manga will sync to the entry you choose.</div>
 				<input
 					type="text"
-					class="w-full mt-3 px-3 py-2 bg-[rgba(232,220,203,0.04)] border border-[rgba(160,130,100,0.2)] rounded-md font-sans text-sm text-[var(--text)] outline-none focus:border-[rgba(201,163,122,0.5)]"
+					class="w-full mt-3 px-3 py-2 bg-fg/4 border border-edge/20 rounded-md font-sans text-sm text-fg outline-none focus:border-accent/50"
 					placeholder="Search MyAnimeList…"
 					bind:value={query}
 				/>
@@ -192,50 +192,50 @@
 
 			<div class="flex-1 min-h-0 overflow-y-auto">
 				{#if searching}
-					<div class="px-5 py-6 font-sans text-sm text-[var(--text-faint)] text-center">Searching…</div>
+					<div class="px-5 py-6 font-sans text-sm text-fg-faint text-center">Searching…</div>
 				{:else if results.length === 0}
-					<div class="px-5 py-6 font-sans text-sm text-[var(--text-faint)] text-center">
+					<div class="px-5 py-6 font-sans text-sm text-fg-faint text-center">
 						{query.trim().length < 3 ? 'Type at least 3 characters.' : 'No results.'}
 					</div>
 				{:else}
 					{#each results as c (c.id)}
 						<button
-							class="w-full flex items-center gap-3 px-5 py-2.5 border-none border-b border-[rgba(160,130,100,0.06)] cursor-pointer text-left transition-colors duration-[120ms] {selected?.id === c.id ? 'bg-[rgba(107,67,36,0.28)]' : 'bg-transparent hover:bg-[rgba(107,67,36,0.12)]'}"
+							class="w-full flex items-center gap-3 px-5 py-2.5 border-none border-b border-edge/6 cursor-pointer text-left transition-colors duration-[120ms] {selected?.id === c.id ? 'bg-tint/28' : 'bg-transparent hover:bg-tint/12'}"
 							onclick={() => selectCandidate(c)}
 						>
-							<div class="w-9 h-13 shrink-0 rounded overflow-hidden bg-[rgba(232,220,203,0.05)]" style="height: 52px;">
+							<div class="w-9 h-13 shrink-0 rounded overflow-hidden bg-fg/5" style="height: 52px;">
 								{#if c.image}
 									<img src={c.image} alt="" class="w-full h-full object-cover" loading="lazy" />
 								{/if}
 							</div>
 							<div class="min-w-0 flex-1">
-								<div class="font-sans text-sm text-[var(--text)] truncate">{c.title}</div>
-								<div class="font-mono text-[10px] text-[var(--text-faint)] tracking-[0.06em] mt-0.5">
+								<div class="font-sans text-sm text-fg truncate">{c.title}</div>
+								<div class="font-mono text-[10px] text-fg-faint tracking-[0.06em] mt-0.5">
 									#{c.id}{c.year ? ` · ${c.year}` : ''} · {isOneshot(c) ? 'ONESHOT' : c.mediaType.toUpperCase()}{c.numChapters > 0 ? ` · ${c.numChapters} ch` : ''}
 								</div>
 							</div>
 							{#if c.id === effectiveId}
-								<span class="font-mono text-[9px] text-[var(--accent)] tracking-[0.1em] uppercase shrink-0">current</span>
+								<span class="font-mono text-[9px] text-accent tracking-[0.1em] uppercase shrink-0">current</span>
 							{/if}
 						</button>
 					{/each}
 				{/if}
 			</div>
 
-			<div class="px-5 py-4 border-t border-[var(--border-faint)] flex flex-col gap-3">
+			<div class="px-5 py-4 border-t border-edge/10 flex flex-col gap-3">
 				{#if malConnected && selected && effectiveId !== null && selected.id !== effectiveId}
-					<label class="flex items-start gap-2 font-sans text-xs text-[var(--text-soft)] cursor-pointer select-none">
-						<input type="checkbox" bind:checked={markOldCompleted} class="mt-0.5 accent-[var(--accent)]" />
+					<label class="flex items-start gap-2 font-sans text-xs text-fg-soft cursor-pointer select-none">
+						<input type="checkbox" bind:checked={markOldCompleted} class="mt-0.5 accent-accent" />
 						<span>Also mark the previous entry (#{effectiveId}) as <strong>Completed</strong> on my list — useful when it's the oneshot version.</span>
 					</label>
 				{/if}
 				<div class="flex justify-end gap-2">
 					<button
-						class="px-4 py-2 bg-transparent border border-[rgba(160,130,100,0.25)] rounded-md font-sans text-sm text-[var(--text-soft)] cursor-pointer"
+						class="px-4 py-2 bg-transparent border border-edge/25 rounded-md font-sans text-sm text-fg-soft cursor-pointer"
 						onclick={() => (pickerOpen = false)}
 					>Cancel</button>
 					<button
-						class="px-4 py-2 bg-[var(--accent)] text-[var(--accent-on)] border-none rounded-md font-sans text-sm font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+						class="px-4 py-2 bg-accent text-accent-on border-none rounded-md font-sans text-sm font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
 						disabled={!selected || saving}
 						onclick={save}
 					>{saving ? 'Saving…' : 'Use this entry'}</button>

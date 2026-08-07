@@ -63,12 +63,12 @@
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-12 sm:py-16 pb-24">
 	<div class="mb-12">
-		<div class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.18em] uppercase mb-2.5">Welcome back</div>
-		<h1 class="font-serif text-4xl sm:text-5xl font-semibold text-[var(--text)] m-0 tracking-[-0.02em]">Find your next chapter.</h1>
-		<p class="font-sans text-[15px] text-[var(--text-soft)] mt-3 max-w-[560px]">
+		<div class="font-mono text-[11px] text-fg-faint tracking-[0.18em] uppercase mb-2.5">Welcome back</div>
+		<h1 class="font-serif text-4xl sm:text-5xl font-semibold text-fg m-0 tracking-[-0.02em]">Find your next chapter.</h1>
+		<p class="font-sans text-[15px] text-fg-soft mt-3 max-w-[560px]">
 			Search any title above to begin reading.
 		</p>
-		<p class="font-sans text-[15px] text-[var(--text-soft)] mt-3 max-w-[560px]">
+		<p class="font-sans text-[15px] text-fg-soft mt-3 max-w-[560px]">
 			Your reading progress is saved on this device, so you can pick up where you left off.
 		</p>
 	</div>
@@ -76,13 +76,13 @@
 	<section>
 		<div class="mb-6 flex items-baseline justify-between gap-4">
 			<div>
-				<h2 class="font-serif text-2xl sm:text-[28px] font-semibold text-[var(--text)] m-0 tracking-[-0.015em]">Continue reading</h2>
-				<p class="font-sans text-[13px] text-[var(--text-faint)] mt-1 mb-0">Where you left off</p>
+				<h2 class="font-serif text-2xl sm:text-[28px] font-semibold text-fg m-0 tracking-[-0.015em]">Continue reading</h2>
+				<p class="font-sans text-[13px] text-fg-faint mt-1 mb-0">Where you left off</p>
 			</div>
 			{#if continueItems.length > 0}
 				<button
 					onclick={clearHistory}
-					class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-[rgba(160,130,100,0.2)] rounded-md font-sans text-xs text-[var(--text-soft)] hover:text-[#e8a09b] hover:border-[rgba(180,70,60,0.35)] hover:bg-[rgba(180,70,60,0.08)] cursor-pointer shrink-0 transition-colors duration-150"
+					class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-edge/20 rounded-md font-sans text-xs text-fg-soft hover:text-danger-fg hover:border-danger/35 hover:bg-danger/8 cursor-pointer shrink-0 transition-colors duration-150"
 				>
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<polyline points="3 6 5 6 21 6" />
@@ -109,23 +109,23 @@
 				<div class="mt-8 flex justify-center">
 					<button
 						onclick={loadMore}
-						class="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--surface)] border border-[rgba(160,130,100,0.2)] rounded-lg font-sans text-[13px] font-medium text-[var(--text-soft)] hover:text-[var(--text)] hover:border-[rgba(160,130,100,0.35)] cursor-pointer transition-colors duration-150"
+						class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface border border-edge/20 rounded-lg font-sans text-[13px] font-medium text-fg-soft hover:text-fg hover:border-edge/35 cursor-pointer transition-colors duration-150"
 					>
 						Load more
-						<span class="font-mono text-[11px] text-[var(--text-faint)]">{continueItems.length} / {allItems.length}</span>
+						<span class="font-mono text-[11px] text-fg-faint">{continueItems.length} / {allItems.length}</span>
 					</button>
 				</div>
 			{/if}
 		{:else}
-			<div class="px-6 sm:px-8 py-12 bg-[var(--surface)] border border-dashed border-[rgba(160,130,100,0.18)] rounded-[10px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+			<div class="px-6 sm:px-8 py-12 bg-surface border border-dashed border-edge/18 rounded-[10px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
 				<div>
-					<h3 class="font-serif text-xl sm:text-[22px] font-medium text-[var(--text)] m-0 mb-1.5">Nothing on the shelf yet.</h3>
-					<p class="font-sans text-sm text-[var(--text-faint)] max-w-[480px] m-0">
+					<h3 class="font-serif text-xl sm:text-[22px] font-medium text-fg m-0 mb-1.5">Nothing on the shelf yet.</h3>
+					<p class="font-sans text-sm text-fg-faint max-w-[480px] m-0">
 						Start reading a manga and it'll appear here so you can jump back in.
 					</p>
 				</div>
 				<a
-					class="px-5 py-3 bg-[var(--accent)] text-[var(--accent-on)] rounded-lg font-sans text-[13px] font-semibold shrink-0"
+					class="px-5 py-3 bg-accent text-accent-on rounded-lg font-sans text-[13px] font-semibold shrink-0"
 					href="/search"
 				>Browse manga →</a>
 			</div>

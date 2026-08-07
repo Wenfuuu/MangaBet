@@ -270,14 +270,14 @@
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 pt-9 pb-24">
 	<div class="mb-9">
-		<div class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.18em] uppercase mb-2.5">
+		<div class="font-mono text-[11px] text-fg-faint tracking-[0.18em] uppercase mb-2.5">
 			My library
 		</div>
-		<h1 class="font-serif text-3xl sm:text-[44px] font-semibold text-[var(--text)] m-0 tracking-[-0.02em]">
+		<h1 class="font-serif text-3xl sm:text-[44px] font-semibold text-fg m-0 tracking-[-0.02em]">
 			Bookmarks
 		</h1>
 		{#if !data.rateLimited}
-			<div class="font-sans text-sm text-[var(--text-faint)] mt-2">
+			<div class="font-sans text-sm text-fg-faint mt-2">
 				{#if filterActive}
 					{results.length} {results.length === 1 ? 'result' : 'results'}{searching ? ` for "${query.trim()}"` : ''}
 				{:else}
@@ -287,7 +287,7 @@
 
 			{#if data.bookmarks.totalStories > 0}
 				<div class="mt-4 max-w-[380px]">
-					<div class="flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg transition-all duration-150 {searchFocused ? 'bg-[var(--surface-2)] border-[rgba(160,130,100,0.45)]' : 'bg-[var(--surface)] border-[var(--border)]'}">
+					<div class="flex items-center gap-2.5 px-3.5 py-2.5 border rounded-lg transition-all duration-150 {searchFocused ? 'bg-surface-2 border-edge/45' : 'bg-surface border-edge/15'}">
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="2" class="shrink-0">
 							<circle cx="11" cy="11" r="7" />
 							<path d="m20 20-3.5-3.5" />
@@ -297,14 +297,14 @@
 							onfocus={() => { searchFocused = true; loadAllBookmarks(); }}
 							onblur={() => (searchFocused = false)}
 							placeholder="Search your bookmarks…"
-							class="flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-sm text-[var(--text)] placeholder:text-[var(--text-faint)]"
+							class="flex-1 min-w-0 bg-transparent border-none outline-none font-sans text-sm text-fg placeholder:text-fg-faint"
 						/>
 						{#if searching}
 							<button
 								type="button"
 								aria-label="Clear search"
 								onclick={() => (query = '')}
-								class="shrink-0 grid place-items-center bg-transparent border-none cursor-pointer text-[var(--text-faint)] hover:text-[var(--text)] transition-colors duration-150"
+								class="shrink-0 grid place-items-center bg-transparent border-none cursor-pointer text-fg-faint hover:text-fg transition-colors duration-150"
 							>
 								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<line x1="18" y1="6" x2="6" y2="18" />
@@ -320,8 +320,8 @@
 								type="button"
 								onclick={() => setFilter(opt.value)}
 								class="px-3 py-1.5 rounded-full font-sans text-xs cursor-pointer border transition-colors duration-150 {filter === opt.value
-									? 'bg-[rgba(201,163,122,0.15)] text-[var(--accent)] border-[rgba(201,163,122,0.4)]'
-									: 'bg-[rgba(232,220,203,0.05)] text-[var(--text-soft)] border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--border-strong)]'}"
+									? 'bg-accent/15 text-accent border-accent/40'
+									: 'bg-fg/5 text-fg-soft border-edge/15 hover:text-fg hover:border-edge/25'}"
 							>
 								{opt.label}
 							</button>
@@ -331,7 +331,7 @@
 			{/if}
 			{#if page.data.malConnected && data.bookmarks.totalStories > 0}
 				<button
-					class="inline-flex items-center gap-2 mt-4 px-4 py-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg font-sans text-sm text-[var(--text-soft)] cursor-pointer hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait"
+					class="inline-flex items-center gap-2 mt-4 px-4 py-2.5 bg-surface border border-edge/15 rounded-lg font-sans text-sm text-fg-soft cursor-pointer hover:text-fg hover:border-edge/25 transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait"
 					disabled={syncing}
 					onclick={massSyncToMal}
 				>
@@ -359,9 +359,9 @@
 		<RateLimitNotice />
 	{:else if filterActive}
 		{#if loadingAll && !allBookmarks}
-			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">Loading…</div>
+			<div class="py-20 text-center font-serif text-2xl text-fg-faint">Loading…</div>
 		{:else if results.length === 0}
-			<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
+			<div class="py-20 text-center font-serif text-2xl text-fg-faint">
 				{#if searching}
 					No bookmarks match "{query.trim()}"{filter !== 'all' ? ` under "${activeFilterLabel}"` : ''}.
 				{:else}
@@ -384,7 +384,7 @@
 			</div>
 		{/if}
 	{:else if data.bookmarks.items.length === 0}
-		<div class="py-20 text-center font-serif text-2xl text-[var(--text-faint)]">
+		<div class="py-20 text-center font-serif text-2xl text-fg-faint">
 			{data.bookmarks.page > 1 ? 'No bookmarks on this page.' : 'No bookmarks yet.'}
 		</div>
 	{:else}
@@ -410,7 +410,7 @@
 			{#if data.bookmarks.page > 1}
 				<a
 					href="/bookmark?page={data.bookmarks.page - 1}"
-					class="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg font-sans text-sm text-[var(--text-soft)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150"
+					class="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-edge/15 rounded-lg font-sans text-sm text-fg-soft hover:text-fg hover:border-edge/25 transition-colors duration-150"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<polyline points="15 18 9 12 15 6" />
@@ -419,14 +419,14 @@
 				</a>
 			{/if}
 
-			<span class="font-mono text-[11px] text-[var(--text-faint)] tracking-[0.12em] px-2">
+			<span class="font-mono text-[11px] text-fg-faint tracking-[0.12em] px-2">
 				PAGE {data.bookmarks.page} / {data.bookmarks.totalPages}
 			</span>
 
 			{#if data.bookmarks.page < data.bookmarks.totalPages}
 				<a
 					href="/bookmark?page={data.bookmarks.page + 1}"
-					class="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg font-sans text-sm text-[var(--text-soft)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150"
+					class="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-edge/15 rounded-lg font-sans text-sm text-fg-soft hover:text-fg hover:border-edge/25 transition-colors duration-150"
 				>
 					Next
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

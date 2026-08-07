@@ -6,24 +6,24 @@
 </script>
 
 <a
-	class="flex items-center gap-5 px-5 py-4 text-left transition-colors duration-150 w-full hover:bg-[rgba(201,163,122,0.06)] {isLast
+	class="flex items-center gap-5 px-5 py-4 text-left transition-colors duration-150 w-full hover:bg-accent/6 {isLast
 		? ''
-		: 'border-b border-[rgba(160,130,100,0.08)]'}"
+		: 'border-b border-edge/8'}"
 	{href}
 >
-	<div class="w-12 shrink-0 font-mono text-xs font-medium text-[var(--accent)]">
+	<div class="w-12 shrink-0 font-mono text-xs font-medium text-accent">
 		#{ch.number}
 	</div>
 	<div class="flex-1 min-w-0">
-		<div class="font-serif text-base font-medium text-[var(--text)] leading-[1.3]">{ch.title}</div>
-		<div class="font-sans text-xs text-[var(--text-faint)] mt-1 flex items-center gap-2 flex-wrap">
+		<div class="font-serif text-base font-medium text-fg leading-[1.3]">{ch.title}</div>
+		<div class="font-sans text-xs text-fg-faint mt-1 flex items-center gap-2 flex-wrap">
 			{#if ch.pages != null}
 				<span>{ch.pages} pages</span>
-				<span class="w-0.5 h-0.5 rounded-full bg-[var(--text-quiet)] shrink-0"></span>
+				<span class="w-0.5 h-0.5 rounded-full bg-fg-quiet shrink-0"></span>
 			{/if}
 			<span>{fmtDate(ch.date)}</span>
 			{#if ch.isNew}
-				<span class="px-1.5 py-0.5 bg-[rgba(201,163,122,0.18)] rounded-[3px] font-mono text-[10px] text-[var(--accent)] tracking-[0.06em]">NEW</span>
+				<span class="px-1.5 py-0.5 bg-accent/18 rounded-[3px] font-mono text-[10px] text-accent tracking-[0.06em]">NEW</span>
 			{/if}
 		</div>
 	</div>
