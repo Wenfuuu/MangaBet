@@ -5,7 +5,9 @@
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
 	import MalMappingCard from '$lib/components/MalMappingCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
-	import { proxyImage, saveMangaDTO } from '$lib/api';
+	import { proxyImage, saveMangaDTO, getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
+	import { showToast } from '$lib/stores/toast.svelte';
+	import type { MalSyncResult } from '$lib/types';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -30,6 +32,50 @@
 	let slug = $derived(page.params.slug!);
 	let id = $derived(page.params.id!);
 	let chapterUrl = (ch: { slug: string }) => `/manga/${slug}/${id}/chapter/${ch.slug}`;
+
+	// Bookmarking also sync to MAL
+	// Takes the progress promise captured before the toggle — it is already settled
+	// (or null), so the sync fires without waiting on the post-toggle page reload.
+	async function syncNewBookmarkToMal(progressPromise: PageData['progress']) {
+		if (!page.data?.malConnected) return;
+		const override = getMalOverride(slug);
+		// User marked this manga "not on MAL".
+		if (override?.malId === null) return;
+		const cachedId = override ? null : getCachedMalId(slug);
+		const progress = await progressPromise;
+		const chapter = progress ? Math.floor(progress.number) : 0;
+		const title = data.detail?.name;
+
+		try {
+			const res = await fetch('/api/mal/sync', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					slug,
+					...(title ? { title } : {}),
+					...(override ? { malId: override.malId, trusted: true } : {}),
+					...(cachedId ? { malId: cachedId } : {}),
+					...(chapter >= 1 ? { chapter } : { planToRead: true }),
+				}),
+			});
+			if (res.status === 401) {
+				showToast('MAL session expired — reconnect in the account menu.');
+				return;
+			}
+			if (!res.ok) throw new Error(`mal sync failed: ${res.status}`);
+			const result: MalSyncResult = await res.json();
+			if (result.synced && result.malId) cacheMalId(slug, result.malId);
+			if (result.synced && !result.unchanged) {
+				showToast(chapter >= 1 ? `Synced to MAL — Ch. ${result.progress}` : 'Added to MAL — Plan to Read.');
+			} else if (result.reason === 'suspect_oneshot') {
+				showToast('MAL match looks wrong (oneshot) — fix it below.');
+			} else if (result.reason === 'unmapped') {
+				console.info(`[mal-sync] no MAL entry mapped for "${slug}"`);
+			}
+		} catch (err) {
+			console.warn('[mal-sync] bookmark sync failed', err);
+		}
+	}
 
 	let copied = $state(false);
 	async function copyLink() {
@@ -144,9 +190,12 @@
 							method="POST"
 							action="?/toggleBookmark"
 							use:enhance={() => {
+								const adding = !isBookmarked;
+								const progressAtClick = data.progress;
 								bookmarkOverride = !isBookmarked;
 								bookmarkPending = true;
-								return async ({ update }) => {
+								return async ({ update, result }) => {
+									if (adding && result.type === 'success') syncNewBookmarkToMal(progressAtClick);
 									await update({ reset: false });
 									bookmarkOverride = null;
 									bookmarkPending = false;
