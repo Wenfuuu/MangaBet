@@ -98,6 +98,8 @@
 	});
 </script>
 
+<svelte:head><title>{data.detail?.name ?? 'Manga'} · MangaBet</title></svelte:head>
+
 {#if data.rateLimited}
 	<RateLimitNotice />
 {:else}

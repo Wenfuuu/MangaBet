@@ -19,6 +19,9 @@
 	);
 	let chapterNum = $derived(currentCh?.number ?? 0);
 	let totalPages = $derived(data.pages.length);
+	let pageTitle = $derived(
+		data.mangaName ? `${data.mangaName} — Chapter ${chapterNum} · MangaBet` : 'Reader · MangaBet'
+	);
 
 	let chapterIdx = $derived(allChapters.findIndex((c) => c.slug === chapterSlugParam));
 	let prevChapter = $derived(allChapters[chapterIdx + 1]);
@@ -236,6 +239,8 @@
 		goto(`/manga/${mangaSlug}/${mangaId}/chapter/${ch.slug}`);
 	}
 </script>
+
+<svelte:head><title>{pageTitle}</title></svelte:head>
 
 {#if data.rateLimited}
 	<RateLimitNotice />

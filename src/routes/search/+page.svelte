@@ -5,7 +5,13 @@
 	import { mangaDetailUrl, saveMangaDTO } from '$lib/api';
 
 	let { data }: { data: PageData } = $props();
+
+	let pageTitle = $derived(
+		data.q.trim() ? `Search: ${data.q} · MangaBet` : 'Popular right now · MangaBet'
+	);
 </script>
+
+<svelte:head><title>{pageTitle}</title></svelte:head>
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 pt-9 pb-24">
 	<div class="mb-9">

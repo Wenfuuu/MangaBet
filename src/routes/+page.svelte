@@ -61,6 +61,8 @@
 	}
 </script>
 
+<svelte:head><title>MangaBet</title></svelte:head>
+
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-12 sm:py-16 pb-24">
 	<div class="mb-12">
 		<div class="font-mono text-[11px] text-fg-faint tracking-[0.18em] uppercase mb-2.5">Welcome back</div>
