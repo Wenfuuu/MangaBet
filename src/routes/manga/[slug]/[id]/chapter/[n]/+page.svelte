@@ -211,6 +211,7 @@
 	$effect(() => {
 		const handleKey = (e: KeyboardEvent) => {
 			if (mode === 'wide') return;
+			if (mode === 'long' && e.key === ' ') return;
 			if (e.key === 'ArrowRight' || e.key === ' ') {
 				e.preventDefault();
 				goNext();
