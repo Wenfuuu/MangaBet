@@ -49,10 +49,10 @@
 			</h1>
 			<p class="font-sans text-sm text-fg-faint mt-2 m-0">
 				{#if chapters.length}
-					{chapters.length} chapter{chapters.length === 1 ? '' : 's'} · {fmtBytes(totalBytes)} on this device
+					{chapters.length} chapter{chapters.length === 1 ? '' : 's'} · {fmtBytes(totalBytes)} of manga saved
 					{#if estimate?.quota}
 						<span class="text-fg-quiet">
-							· {fmtBytes(estimate.usage)} of {fmtBytes(estimate.quota)} used
+							· MangaBet is using {fmtBytes(estimate.usage)} of {fmtBytes(estimate.quota)} available
 						</span>
 					{/if}
 				{:else}

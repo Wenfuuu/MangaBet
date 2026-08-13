@@ -8,6 +8,30 @@ const MANIFEST_KEY = 'mangabet:offline:v1';
 const LIBRARY_PATH = '/downloads';
 // The CDN throttles bursts (see the image proxy), so saving stays deliberately slow.
 const CONCURRENCY = 4;
+const MAX_ATTEMPTS = 4;
+const RETRY_DELAYS_MS = [600, 1800, 4000];
+// The proxy reports an upstream 429 as 502, so both have to count as retriable.
+const RETRIABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+function abortError(signal: AbortSignal): unknown {
+	return signal.reason ?? new DOMException('Aborted', 'AbortError');
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+	return new Promise((resolve, reject) => {
+		if (signal.aborted) return reject(abortError(signal));
+		let timer: ReturnType<typeof setTimeout>;
+		const onAbort = () => {
+			clearTimeout(timer);
+			reject(abortError(signal));
+		};
+		timer = setTimeout(() => {
+			signal.removeEventListener('abort', onAbort);
+			resolve();
+		}, ms);
+		signal.addEventListener('abort', onAbort, { once: true });
+	});
+}
 
 export function offlineSupported(): boolean {
 	return typeof caches !== 'undefined' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
@@ -28,19 +52,40 @@ function writeManifest(manifest: Record<string, SavedChapter>): void {
 }
 
 async function cacheUrl(cache: Cache, url: string, signal: AbortSignal): Promise<number> {
-	const res = await fetch(url, { signal, credentials: 'same-origin' });
-	if (!res.ok) throw new Error(`${url} responded ${res.status}`);
-	// Rebuild from the decoded body rather than putting the original response:
-	// copying its headers wholesale can carry a content-encoding that no longer
-	// describes what we are storing.
-	const blob = await res.blob();
-	await cache.put(
-		url,
-		new Response(blob, {
-			headers: { 'content-type': res.headers.get('content-type') ?? 'application/octet-stream' },
-		})
-	);
-	return blob.size;
+	let lastError: unknown;
+
+	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+		if (attempt > 1) await sleep(RETRY_DELAYS_MS[attempt - 2] ?? 4000, signal);
+
+		let res: Response;
+		try {
+			res = await fetch(url, { signal, credentials: 'same-origin' });
+		} catch (err) {
+			if (signal.aborted) throw err;
+			lastError = err;
+			continue;
+		}
+
+		if (res.ok) {
+			// Rebuild from the decoded body rather than putting the original response:
+			// copying its headers wholesale can carry a content-encoding that no longer
+			// describes what we are storing.
+			const blob = await res.blob();
+			await cache.put(
+				url,
+				new Response(blob, {
+					headers: { 'content-type': res.headers.get('content-type') ?? 'application/octet-stream' },
+				})
+			);
+			return blob.size;
+		}
+
+		// A 403/404 will not fix itself — fail fast rather than burning retries.
+		if (!RETRIABLE_STATUSES.has(res.status)) throw new Error(`${url} responded ${res.status}`);
+		lastError = new Error(`${url} responded ${res.status}`);
+	}
+
+	throw lastError ?? new Error(`${url} failed after ${MAX_ATTEMPTS} attempts`);
 }
 
 async function pool<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
@@ -86,15 +131,13 @@ export async function saveChapter(
 	// start. The manga page rides along so "Back" and the chapter list still work,
 	// and /downloads so the library itself is browsable with no network.
 	const mangaPath = `/manga/${input.mangaSlug}/${input.mangaId}`;
-	const urls = [
-		path,
-		`${path}/__data.json`,
-		mangaPath,
-		`${mangaPath}/__data.json`,
-		LIBRARY_PATH,
-		`${LIBRARY_PATH}/__data.json`,
-		...imageUrls.map((url) => proxyImage(url)),
-	];
+	const ownUrls = [path, `${path}/__data.json`, ...imageUrls.map((url) => proxyImage(url))];
+	// Every chapter of this manga stores these, and the cache keeps one copy — so
+	// they are fetched here but left out of `bytes`, which would otherwise count
+	// the same shell once per saved chapter.
+	const sharedUrls = [mangaPath, `${mangaPath}/__data.json`, LIBRARY_PATH, `${LIBRARY_PATH}/__data.json`];
+	const urls = [...ownUrls, ...sharedUrls];
+	const owned = new Set(ownUrls);
 
 	const cache = await caches.open(OFFLINE_CACHE);
 	let bytes = 0;
@@ -103,7 +146,8 @@ export async function saveChapter(
 
 	try {
 		await pool(urls, CONCURRENCY, async (url) => {
-			bytes += await cacheUrl(cache, url, signal);
+			const size = await cacheUrl(cache, url, signal);
+			if (owned.has(url)) bytes += size;
 			opts.onProgress?.({ done: ++done, total: urls.length });
 		});
 	} catch (err) {
