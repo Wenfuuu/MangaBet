@@ -43,8 +43,16 @@
 				color: #a08c70;
 				line-height: 1.5;
 			}
-			button {
+			.actions {
 				margin-top: 0.5rem;
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 0.6rem;
+			}
+			.btn {
+				display: inline-flex;
+				align-items: center;
 				padding: 0.65rem 1.4rem;
 				border: 1px solid rgba(201, 163, 122, 0.25);
 				border-radius: 999px;
@@ -52,10 +60,22 @@
 				color: #c9a37a;
 				font: inherit;
 				font-weight: 500;
+				text-decoration: none;
 				cursor: pointer;
 			}
-			button:hover {
+			.btn:hover {
 				background: rgba(201, 163, 122, 0.1);
+			}
+			.btn.primary {
+				border-color: rgba(201, 163, 122, 0.45);
+				background: rgba(201, 163, 122, 0.14);
+			}
+			.btn.primary:hover {
+				background: rgba(201, 163, 122, 0.2);
+			}
+			/* Beats the display:inline-flex above, which would otherwise unhide the link. */
+			[hidden] {
+				display: none !important;
 			}
 		</style>
 	</head>
@@ -64,7 +84,24 @@
 			<img src="/icon-192.png" alt="MangaBet" />
 			<h1>You're offline</h1>
 			<p>MangaBet can't reach the network right now. Check your connection and try again.</p>
-			<button onclick="location.reload()">Retry</button>
+			<div class="actions">
+				<a class="btn primary" id="downloads-link" href="/downloads" hidden>Read saved chapters</a>
+				<button class="btn" onclick="location.reload()">Retry</button>
+			</div>
 		</div>
+		<script>
+			// Key must stay in sync with MANIFEST_KEY in src/lib/offline.ts.
+			try {
+				const saved = JSON.parse(localStorage.getItem('mangabet:offline:v1') || '{}');
+				const count = Object.keys(saved).length;
+				if (count > 0) {
+					const link = document.getElementById('downloads-link');
+					link.textContent = 'Read saved chapters (' + count + ')';
+					link.hidden = false;
+				}
+			} catch (err) {
+				// Storage can be unavailable (private mode, blocked cookies) — just hide the link.
+			}
+		</script>
 	</body>
 </html>
