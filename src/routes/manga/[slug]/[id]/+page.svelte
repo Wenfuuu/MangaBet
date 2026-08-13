@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { COVER_PALETTES, fmtDate, fmtViews } from '$lib/utils';
 	import ChapterRow from '$lib/components/ChapterRow.svelte';
+	import OfflineDownloadAll from '$lib/components/OfflineDownloadAll.svelte';
 	import MalMappingCard from '$lib/components/MalMappingCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { proxyImage, saveMangaDTO, getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
@@ -250,24 +251,32 @@
 				Chapters
 				<span class="font-sans text-base font-normal text-fg-faint ml-3">{chapters.length} total</span>
 			</h2>
-			<button
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-edge/20 rounded-md font-sans text-xs text-fg-soft cursor-pointer shrink-0"
-				onclick={() => (order = order === 'desc' ? 'asc' : 'desc')}
-			>
-				<svg
-					width="12"
-					height="12"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					style="transform: {order === 'asc' ? 'rotate(180deg)' : 'none'}; transition: transform 200ms;"
+			<div class="flex items-center gap-2 shrink-0">
+				<OfflineDownloadAll
+					mangaSlug={slug}
+					mangaId={id}
+					mangaName={data.detail.name}
+					{chapters}
+				/>
+				<button
+					class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-edge/20 rounded-md font-sans text-xs text-fg-soft cursor-pointer shrink-0"
+					onclick={() => (order = order === 'desc' ? 'asc' : 'desc')}
 				>
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<polyline points="19 12 12 19 5 12" />
-				</svg>
-				{order === 'desc' ? 'Newest first' : 'Oldest first'}
-			</button>
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						style="transform: {order === 'asc' ? 'rotate(180deg)' : 'none'}; transition: transform 200ms;"
+					>
+						<line x1="12" y1="5" x2="12" y2="19" />
+						<polyline points="19 12 12 19 5 12" />
+					</svg>
+					{order === 'desc' ? 'Newest first' : 'Oldest first'}
+				</button>
+			</div>
 		</div>
 
 		<div class="border border-edge/10 rounded-[10px] overflow-hidden">
