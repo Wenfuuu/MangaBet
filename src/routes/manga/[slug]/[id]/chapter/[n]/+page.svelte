@@ -6,6 +6,7 @@
 	import ReaderViewport from '$lib/components/ReaderViewport.svelte';
 	import ReaderSidebar from '$lib/components/ReaderSidebar.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
+	import OfflineToggle from '$lib/components/OfflineToggle.svelte';
 	import type { ReaderMode } from '$lib/types';
 	import { touchReaderIndex, getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
 	import { showToast } from '$lib/stores/toast.svelte';
@@ -330,6 +331,17 @@
 			</div>
 
 			<div class="bar-divider"></div>
+
+			{#if currentCh}
+				<OfflineToggle
+					{mangaSlug}
+					{mangaId}
+					mangaName={data.mangaName}
+					chapter={currentCh}
+					imageUrls={data.pages}
+					variant="bar"
+				/>
+			{/if}
 
 			<button
 				class="settings-btn"

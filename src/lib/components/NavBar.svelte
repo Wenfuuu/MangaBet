@@ -68,7 +68,9 @@
 					? 'latest'
 					: page.url.pathname.startsWith('/bookmark')
 						? 'bookmarks'
-						: ''
+						: page.url.pathname.startsWith('/downloads')
+							? 'downloads'
+							: ''
 	);
 
 	function submitSearch(e?: SubmitEvent) {
@@ -190,6 +192,10 @@
 					href="/bookmark"
 				>Bookmarks</a>
 			{/if}
+			<a
+				class="px-3.5 py-2 rounded-md font-sans text-sm font-medium transition-colors duration-150 {activePage === 'downloads' ? 'text-fg' : 'text-fg-faint hover:text-fg'}"
+				href="/downloads"
+			>Downloads</a>
 		</nav>
 
 		<!-- Search box -->
@@ -351,6 +357,11 @@
 					onclick={closeMenu}
 				>Bookmarks</a>
 			{/if}
+			<a
+				class="block w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium {activePage === 'downloads' ? 'text-fg' : 'text-fg-faint'}"
+				href="/downloads"
+				onclick={closeMenu}
+			>Downloads</a>
 			{#if isLoggedIn}
 				<button
 					class="w-full text-left px-3 py-2.5 rounded-md font-sans text-sm font-medium bg-transparent border-none cursor-pointer text-fg-faint"

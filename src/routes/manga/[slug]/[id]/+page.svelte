@@ -272,7 +272,14 @@
 
 		<div class="border border-edge/10 rounded-[10px] overflow-hidden">
 			{#each visible as ch, i}
-				<ChapterRow {ch} isLast={i === visible.length - 1} href={chapterUrl(ch)} />
+				<ChapterRow
+					{ch}
+					isLast={i === visible.length - 1}
+					href={chapterUrl(ch)}
+					mangaSlug={slug}
+					mangaId={id}
+					mangaName={data.detail.name}
+				/>
 			{/each}
 		</div>
 	</div>

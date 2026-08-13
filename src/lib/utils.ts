@@ -20,6 +20,13 @@ export function fmtDate(d: Date): string {
 	return `${Math.floor(days / 365)}y ago`;
 }
 
+export function fmtBytes(n: number): string {
+	if (n >= 1_073_741_824) return `${(n / 1_073_741_824).toFixed(1)} GB`;
+	if (n >= 1_048_576) return `${(n / 1_048_576).toFixed(1)} MB`;
+	if (n >= 1024) return `${Math.round(n / 1024)} KB`;
+	return `${n} B`;
+}
+
 export function fmtViews(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
 	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
