@@ -3,6 +3,7 @@ import {
 	readManifest,
 	removeAllChapters,
 	removeChapter,
+	removeManga,
 	saveChapter,
 } from '$lib/offline';
 import { showToast } from '$lib/stores/toast.svelte';
@@ -78,6 +79,16 @@ export async function removeChapterOffline(key: string): Promise<void> {
 	delete entries[key];
 	await removeChapter(key);
 	if (entry) showToast(`Ch. ${entry.chapterNumber} removed from offline.`);
+}
+
+export async function removeMangaOffline(mangaSlug: string): Promise<void> {
+	const doomed = Object.values(entries).filter((entry) => entry.mangaSlug === mangaSlug);
+	if (!doomed.length) return;
+
+	const name = doomed[0].mangaName;
+	for (const entry of doomed) delete entries[entry.key];
+	await removeManga(mangaSlug);
+	showToast(`Removed ${doomed.length} chapter${doomed.length === 1 ? '' : 's'} of ${name}.`);
 }
 
 export async function removeAllOffline(): Promise<void> {

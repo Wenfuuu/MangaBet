@@ -192,6 +192,23 @@ export async function removeChapter(key: string): Promise<void> {
 	);
 }
 
+export async function removeManga(mangaSlug: string): Promise<void> {
+	const manifest = readManifest();
+	const doomed = Object.values(manifest).filter((entry) => entry.mangaSlug === mangaSlug);
+	if (!doomed.length) return;
+
+	for (const entry of doomed) delete manifest[entry.key];
+	writeManifest(manifest);
+	if (!offlineSupported()) return;
+
+	const stillNeeded = new Set(Object.values(manifest).flatMap((other) => other.urls));
+	const cache = await caches.open(OFFLINE_CACHE);
+	const doomedUrls = [...new Set(doomed.flatMap((entry) => entry.urls))];
+	await Promise.all(
+		doomedUrls.filter((url) => !stillNeeded.has(url)).map((url) => cache.delete(url))
+	);
+}
+
 export async function removeAllChapters(): Promise<void> {
 	writeManifest({});
 	if (offlineSupported()) await caches.delete(OFFLINE_CACHE);
