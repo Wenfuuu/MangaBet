@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { coverPalette, fmtBytes, fmtDate } from '$lib/utils';
+	import { fmtBytes, fmtDate } from '$lib/utils';
 	import { proxyImage } from '$lib/api';
 	import { storageEstimate } from '$lib/offline';
 	import {
@@ -25,7 +25,6 @@
 	let estimate = $state<{ usage: number; quota: number } | null>(null);
 	let query = $state('');
 	let open = $state<Record<string, boolean>>({});
-	let brokenCovers = $state<Record<string, boolean>>({});
 
 	$effect(() => {
 		loadOfflineLibrary();
@@ -207,24 +206,20 @@
 
 		<div class="flex flex-col gap-3">
 			{#each visible as group (group.slug)}
-				{@const palette = coverPalette(group.slug)}
-				<div class="border border-edge/10 rounded-[10px] overflow-hidden bg-fg/2">
+				<div class="bg-surface border border-edge/15 hover:border-edge/25 rounded-lg overflow-hidden transition-colors duration-150">
 					<div class="flex items-center gap-3 pr-3">
 						<button
-							class="flex items-center gap-4 flex-1 min-w-0 p-3 text-left bg-transparent border-none cursor-pointer"
+							class="flex items-center gap-4 flex-1 min-w-0 p-3 sm:p-4 text-left bg-transparent border-none cursor-pointer"
 							aria-expanded={isOpen(group.slug)}
 							onclick={() => (open[group.slug] = !isOpen(group.slug))}
 						>
-							<div
-								class="w-11 h-15.5 shrink-0 rounded-[5px] overflow-hidden"
-								style="background: linear-gradient(160deg, {palette[0]}, {palette[1]}, {palette[2]});"
-							>
-								{#if covers[group.slug] && !brokenCovers[group.slug]}
+							<div class="w-14 aspect-[2/3] shrink-0 overflow-hidden rounded-md relative bg-surface-2">
+								{#if covers[group.slug]}
 									<img
-										class="w-full h-full object-cover"
+										class="absolute inset-0 w-full h-full object-fill"
 										src={proxyImage(covers[group.slug])}
 										alt=""
-										onerror={() => (brokenCovers[group.slug] = true)}
+										loading="lazy"
 									/>
 								{/if}
 							</div>

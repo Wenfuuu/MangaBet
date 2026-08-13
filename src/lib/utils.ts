@@ -9,13 +9,6 @@ export const COVER_PALETTES: [string, string, string][] = [
 	['#241810', '#0c0604', '#3a2718'],
 ];
 
-// Deterministic cover stand-in: the same slug always gets the same gradient, so a
-// manga looks consistent wherever its cover is missing or unreachable.
-export function coverPalette(key: string): [string, string, string] {
-	const sum = key.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-	return COVER_PALETTES[sum % COVER_PALETTES.length];
-}
-
 export function fmtDate(d: Date): string {
 	const today = new Date();
 	const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
