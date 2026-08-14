@@ -112,8 +112,9 @@ function editDistance(a: string, b: string): number {
 
 type MatchGrade = 'exact' | 'fuzzy' | 'top';
 // Fuzzy tier: long titles only, digits must be identical (a sequel's "2" can
-// never sneak through), and at most ~4% of the letters may differ — enough for
-// romanization drift like "Batoru"/"Battle", far too tight for a different work.
+// never sneak through), and at most ~4% of the letters may differ — but never
+// fewer than one — enough for romanization drift like "Batoru"/"Battle", far too
+// tight for a different work.
 const FUZZY_MIN_LEN = 20;
 const FUZZY_RATIO = 0.04;
 
@@ -132,8 +133,11 @@ function gradeMatch(siteTitle: string, candidateTitles: (string | null | undefin
 		const wd = digitsOf(w);
 		for (const c of cands) {
 			if (c.length < FUZZY_MIN_LEN || digitsOf(c) !== wd) continue;
-			const max = Math.floor(Math.max(w.length, c.length) * FUZZY_RATIO);
-			if (max > 0 && Math.abs(w.length - c.length) <= max && editDistance(w, c) <= max) {
+			// Always allow at least one edit: 4% floors to 0 below 25 characters, which
+			// silently made everything in the 20-24 range exact-match-only despite
+			// clearing FUZZY_MIN_LEN.
+			const max = Math.max(1, Math.floor(Math.max(w.length, c.length) * FUZZY_RATIO));
+			if (Math.abs(w.length - c.length) <= max && editDistance(w, c) <= max) {
 				return 'fuzzy';
 			}
 		}
