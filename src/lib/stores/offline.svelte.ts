@@ -118,9 +118,9 @@ export async function saveAllOffline(input: {
 }): Promise<void> {
 	if (batch) return;
 
-	const pending = input.chapters.filter(
-		(ch) => !entries[offlineKey(input.mangaSlug, input.mangaId, ch.slug)]
-	);
+	const pending = input.chapters
+		.filter((ch) => !entries[offlineKey(input.mangaSlug, input.mangaId, ch.slug)])
+		.sort((a, b) => a.number - b.number);
 	if (!pending.length) {
 		showToast('Every chapter is already saved.');
 		return;
