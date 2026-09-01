@@ -123,6 +123,7 @@
 	let chapterMenuOpen = $state(false);
 	let chapterFilter = $state('');
 	let titleWrapEl = $state<HTMLDivElement>();
+	let barHeight = $state(56);
 	let chapterListEl = $state<HTMLDivElement>();
 
 	let numColCh = $derived(
@@ -249,7 +250,11 @@
 {:else}
 <div class="reader">
 	<!-- Top bar -->
-	<div class="top-bar" style="transform: {chromeVisible ? 'translateY(0)' : 'translateY(-100%)'};">
+	<div
+		class="top-bar"
+		bind:clientHeight={barHeight}
+		style="transform: {chromeVisible ? 'translateY(0)' : 'translateY(-100%)'}; --bar-h: {barHeight}px;"
+	>
 		<div class="bar-inner">
 			<a class="back-btn" href={backUrl}>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -288,6 +293,7 @@
 
 				{#if chapterMenuOpen}
 					<div class="chapter-dropdown" role="menu">
+						<div class="dd-manga">{data.mangaName}</div>
 						<div class="dd-search">
 							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<circle cx="11" cy="11" r="7" />
@@ -562,6 +568,16 @@
 		overflow: hidden;
 	}
 
+	.dd-manga {
+		padding: 10px 12px 8px;
+		font-family: 'Source Serif 4', serif;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--text);
+		border-bottom: 1px solid var(--border-faint);
+		flex-shrink: 0;
+	}
+
 	.dd-search {
 		display: flex;
 		align-items: center;
@@ -675,7 +691,6 @@
 		margin-top: 1px;
 	}
 
-	/* Mobile-only stand-in for the manga title — see the 640px block */
 	.chapter-compact {
 		display: none;
 	}
@@ -798,9 +813,17 @@
 			display: none;
 		}
 
-		.chapter-sub,
-		.manga-title {
+		.chapter-sub {
 			display: none;
+		}
+
+		.manga-title {
+			font-family: 'Inter', sans-serif;
+			font-size: 10px;
+			font-weight: 500;
+			letter-spacing: 0.03em;
+			line-height: 1.3;
+			color: var(--text-faint);
 		}
 
 		.chapter-compact {
@@ -808,6 +831,7 @@
 			font-family: 'Source Serif 4', serif;
 			font-size: 13px;
 			font-weight: 500;
+			line-height: 1.25;
 			color: var(--text);
 			white-space: nowrap;
 			overflow: hidden;
@@ -871,7 +895,7 @@
 
 		.chapter-dropdown {
 			position: fixed;
-			top: 56px;
+			top: calc(var(--bar-h, 56px) + 6px);
 			left: 8px;
 			right: 8px;
 			min-width: 0;
