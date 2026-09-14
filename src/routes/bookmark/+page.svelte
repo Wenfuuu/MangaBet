@@ -304,14 +304,19 @@
 				if (known) bookmarkedMalIds.add(known);
 			}
 
-			const wanted = listEntries.filter((e) => IMPORT_STATUSES.has(e.status) && e.title);
-			const queue = wanted
+			const importable = listEntries.filter((e) => IMPORT_STATUSES.has(e.status) && e.title);
+			const offList = listEntries.length - importable.length;
+			const queue = importable
 				.filter((e) => !bookmarkedMalIds.has(e.malId))
 				.map((entry) => ({ entry, attempts: 0 }));
-			let alreadyHad = wanted.length - queue.length;
-			importTotal = queue.length;
+			let alreadyHad = importable.length - queue.length;
+			// Count against every importable entry, not just the queued ones. Entries
+			// settled by the local diff are already done, so seeding the counter with
+			// them keeps the total matching the MAL list instead of silently shrinking it.
+			importTotal = importable.length;
+			importDone = alreadyHad;
 			if (queue.length === 0) {
-				showToast('Nothing new to import from MAL.');
+				showToast(`Nothing new to import — all ${alreadyHad} already bookmarked.`);
 				return;
 			}
 
@@ -393,6 +398,7 @@
 			}
 			const parts = [`${added} added`];
 			if (alreadyHad > 0) parts.push(`${alreadyHad} already bookmarked`);
+			if (offList > 0) parts.push(`${offList} skipped (on-hold/dropped)`);
 			if (unmatched > 0) parts.push(`${unmatched} not found on site`);
 			if (rateLimited > 0) parts.push(`${rateLimited} rate-limited (run again in a minute)`);
 			if (failed > 0) parts.push(`${failed} failed`);
