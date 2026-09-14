@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { PageData } from './$types';
-	import type { BookmarkItem, MalSyncResult, MalListEntry } from '$lib/types';
+	import type { BookmarkItem, MalSyncResult, MalListEntry, MalImportResult } from '$lib/types';
 	import BookmarkCard from '$lib/components/BookmarkCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
@@ -264,6 +265,150 @@
 			syncing = false;
 		}
 	}
+
+	// MAL statuses worth a bookmark. On-hold and dropped stay out — bookmarks have
+	// no status of their own, so importing those would just be clutter to remove.
+	const IMPORT_STATUSES = new Set(['reading', 'completed', 'plan_to_read']);
+
+	let importing = $state(false);
+	let importDone = $state(0);
+	let importTotal = $state(0);
+
+	async function massImportFromMal() {
+		if (importing) return;
+		importing = true;
+		importDone = 0;
+		importTotal = 0;
+
+		try {
+			const [listRes, bookmarksRes] = await Promise.all([
+				fetch('/api/mal/list'),
+				fetch('/api/bookmarks'),
+			]);
+			if (listRes.status === 401) {
+				showToast('MAL session expired — reconnect in the account menu.');
+				return;
+			}
+			if (!listRes.ok) throw new Error(`MAL list fetch failed: ${listRes.status}`);
+			if (!bookmarksRes.ok) throw new Error(`bookmarks fetch failed: ${bookmarksRes.status}`);
+
+			const listEntries: MalListEntry[] = await listRes.json();
+			const bookmarks: BookmarkItem[] = await bookmarksRes.json();
+			const bookmarkedSlugs = new Set(bookmarks.map((b) => b.mangaSlug));
+
+			// Invert the slug→malId knowledge the export sync already built: every MAL
+			// entry that maps to a bookmark we hold is settled for zero requests.
+			const bookmarkedMalIds = new Set<number>();
+			for (const slug of bookmarkedSlugs) {
+				const known = getMalOverride(slug)?.malId ?? getCachedMalId(slug);
+				if (known) bookmarkedMalIds.add(known);
+			}
+
+			const wanted = listEntries.filter((e) => IMPORT_STATUSES.has(e.status) && e.title);
+			const queue = wanted
+				.filter((e) => !bookmarkedMalIds.has(e.malId))
+				.map((entry) => ({ entry, attempts: 0 }));
+			let alreadyHad = wanted.length - queue.length;
+			importTotal = queue.length;
+			if (queue.length === 0) {
+				showToast('Nothing new to import from MAL.');
+				return;
+			}
+
+			let added = 0;
+			let unmatched = 0;
+			let failed = 0;
+			let rateLimited = 0;
+			let loggedOut = false;
+
+			const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+			const MAX_ATTEMPTS = 5;
+			// When any request gets a 429/503, the worker pauses until this timestamp.
+			let pauseUntil = 0;
+			const worker = async () => {
+				while (queue.length > 0 && !loggedOut) {
+					const wait = pauseUntil - Date.now();
+					if (wait > 0) {
+						await sleep(wait);
+						continue;
+					}
+					const job = queue.shift();
+					if (!job) break;
+					try {
+						const r = await fetch('/api/mal/import', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ malId: job.entry.malId, title: job.entry.title }),
+						});
+						if (r.status === 401) {
+							loggedOut = true;
+							return;
+						}
+						if (r.status === 429 || r.status === 503) {
+							job.attempts++;
+							if (job.attempts >= MAX_ATTEMPTS) {
+								rateLimited++;
+								importDone++;
+								continue;
+							}
+							pauseUntil = Date.now() + Math.min(30000, 2000 * 2 ** job.attempts);
+							queue.push(job);
+							continue;
+						}
+						if (!r.ok) throw new Error(`import failed: ${r.status}`);
+						const result: MalImportResult = await r.json();
+						if (!result.imported) {
+							unmatched++;
+						} else if (result.slug && bookmarkedSlugs.has(result.slug)) {
+							// Resolved to something already bookmarked under a slug we had no
+							// MAL id for — the add was a no-op upstream.
+							alreadyHad++;
+						} else {
+							added++;
+							if (result.slug) {
+								bookmarkedSlugs.add(result.slug);
+								// Feed the forward cache so a later export sync skips its lookup.
+								cacheMalId(result.slug, job.entry.malId);
+							}
+						}
+						importDone++;
+					} catch (err) {
+						console.warn(`[mal-import] #${job.entry.malId} "${job.entry.title}" failed`, err);
+						failed++;
+						importDone++;
+					}
+					// Paced for MAL-Sync's reverse lookup, the binding limit here. Measured:
+					// ~2.5s spacing draws no 429s while sub-second spacing draws them on
+					// nearly every call, and each one costs more in backoff than pacing does.
+					await sleep(1500);
+				}
+			};
+			// Single worker on purpose: MAL-Sync's reverse lookup rate limits hard, and
+			// a 429 storm costs far more time in backoff than parallelism saves.
+			await worker();
+
+			if (loggedOut) {
+				showToast('Session expired — please log in again.');
+				return;
+			}
+			const parts = [`${added} added`];
+			if (alreadyHad > 0) parts.push(`${alreadyHad} already bookmarked`);
+			if (unmatched > 0) parts.push(`${unmatched} not found on site`);
+			if (rateLimited > 0) parts.push(`${rateLimited} rate-limited (run again in a minute)`);
+			if (failed > 0) parts.push(`${failed} failed`);
+			showToast(`MAL import: ${parts.join(' · ')}`);
+
+			if (added > 0) {
+				allBookmarks = null;
+				await invalidateAll();
+			}
+		} catch (err) {
+			console.warn('[mal-import] failed', err);
+			showToast('MAL import failed — could not load your MAL list or bookmarks.');
+		} finally {
+			importing = false;
+		}
+	}
 </script>
 
 <svelte:head><title>Bookmarks · MangaBet</title></svelte:head>
@@ -329,28 +474,54 @@
 					</div>
 				</div>
 			{/if}
-			{#if page.data.malConnected && data.bookmarks.totalStories > 0}
-				<button
-					class="inline-flex items-center gap-2 mt-4 px-4 py-2.5 bg-surface border border-edge/15 rounded-lg font-sans text-sm text-fg-soft cursor-pointer hover:text-fg hover:border-edge/25 transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait"
-					disabled={syncing}
-					onclick={massSyncToMal}
-				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						class={syncing ? 'animate-spin' : ''}
+			{#if page.data.malConnected}
+				<div class="flex flex-wrap items-center justify-center gap-2 mt-4">
+					{#if data.bookmarks.totalStories > 0}
+						<button
+							class="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-edge/15 rounded-lg font-sans text-sm text-fg-soft cursor-pointer hover:text-fg hover:border-edge/25 transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait"
+							disabled={syncing || importing}
+							onclick={massSyncToMal}
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								class={syncing ? 'animate-spin' : ''}
+							>
+								<path d="M21 12a9 9 0 1 1-2.64-6.36" />
+								<polyline points="21 3 21 9 15 9" />
+							</svg>
+							{syncing
+								? `Syncing${syncTotal > 0 ? ` ${syncDone}/${syncTotal}` : ''}…`
+								: 'Sync all to MAL'}
+						</button>
+					{/if}
+					<button
+						class="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-edge/15 rounded-lg font-sans text-sm text-fg-soft cursor-pointer hover:text-fg hover:border-edge/25 transition-colors duration-150 disabled:opacity-60 disabled:cursor-wait"
+						disabled={syncing || importing}
+						onclick={massImportFromMal}
 					>
-						<path d="M21 12a9 9 0 1 1-2.64-6.36" />
-						<polyline points="21 3 21 9 15 9" />
-					</svg>
-					{syncing
-						? `Syncing${syncTotal > 0 ? ` ${syncDone}/${syncTotal}` : ''}…`
-						: 'Sync all to MAL'}
-				</button>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							class={importing ? 'animate-pulse' : ''}
+						>
+							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+							<polyline points="7 10 12 15 17 10" />
+							<line x1="12" y1="15" x2="12" y2="3" />
+						</svg>
+						{importing
+							? `Importing${importTotal > 0 ? ` ${importDone}/${importTotal}` : ''}…`
+							: 'Import from MAL'}
+					</button>
+				</div>
 			{/if}
 		{/if}
 	</div>

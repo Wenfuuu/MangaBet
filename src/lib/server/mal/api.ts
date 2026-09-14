@@ -60,7 +60,7 @@ export async function getMangaStatus(malId: number, token: string): Promise<MalM
 }
 
 interface MalListItemRaw {
-	node: { id: number; num_chapters?: number };
+	node: { id: number; title?: string; num_chapters?: number };
 	list_status?: { status?: MalReadStatus; num_chapters_read?: number };
 }
 
@@ -72,7 +72,7 @@ export async function getUserMangaList(token: string): Promise<MalListEntry[]> {
 
 	for (;;) {
 		const params = new URLSearchParams({
-			fields: 'list_status,num_chapters',
+			fields: 'list_status,num_chapters,title',
 			limit: String(LIMIT),
 			offset: String(offset),
 			// MAL omits NSFW-flagged entries by default — without this the diff would
@@ -89,6 +89,7 @@ export async function getUserMangaList(token: string): Promise<MalListEntry[]> {
 		for (const it of data) {
 			entries.push({
 				malId: it.node.id,
+				title: it.node.title ?? '',
 				status: it.list_status?.status ?? '',
 				chaptersRead: it.list_status?.num_chapters_read ?? 0,
 				numChapters: it.node.num_chapters ?? 0,

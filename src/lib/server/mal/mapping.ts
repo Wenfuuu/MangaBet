@@ -110,7 +110,7 @@ function editDistance(a: string, b: string): number {
 	return prev[b.length];
 }
 
-type MatchGrade = 'exact' | 'fuzzy' | 'top';
+export type MatchGrade = 'exact' | 'fuzzy' | 'top';
 // Fuzzy tier: long titles only, digits must be identical (a sequel's "2" can
 // never sneak through), and at most ~4% of the letters may differ — but never
 // fewer than one — enough for romanization drift like "Batoru"/"Battle", far too
@@ -118,7 +118,7 @@ type MatchGrade = 'exact' | 'fuzzy' | 'top';
 const FUZZY_MIN_LEN = 20;
 const FUZZY_RATIO = 0.04;
 
-function gradeMatch(siteTitle: string, candidateTitles: (string | null | undefined)[]): MatchGrade | null {
+export function gradeMatch(siteTitle: string, candidateTitles: (string | null | undefined)[]): MatchGrade | null {
 	const wants = titleVariants(siteTitle).map(squash).filter(Boolean);
 	const cands = candidateTitles
 		.filter((t): t is string => Boolean(t))

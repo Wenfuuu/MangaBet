@@ -4,4 +4,4 @@ export type { ContinueItem, ReaderMode } from '../types/reader/reader.types';
 export type { UserProfile } from '../types/user/user.types';
 export type { BookmarkItem, BookmarkChapterRef, BookmarkPage } from '../types/bookmark/bookmark.types';
 export type { SavedChapter, SaveChapterInput, SaveProgress, ChapterPagesResponse } from '../types/offline/offline.types';
-export type { MalTokenResponse, MalSyncPageMapping, MalReadStatus, MalListStatus, MalMangaStatus, MalSyncResult, MalSearchCandidate, MalMappingInfo, MalOverride, MalListEntry } from '../types/mal/mal.types';
+export type { MalTokenResponse, MalSyncPageMapping, MalReadStatus, MalListStatus, MalMangaStatus, MalSyncResult, MalSearchCandidate, MalMappingInfo, MalOverride, MalListEntry, MalImportResult } from '../types/mal/mal.types';

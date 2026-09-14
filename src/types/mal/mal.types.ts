@@ -71,10 +71,20 @@ export interface MalOverride {
 	title: string | null;
 }
 
-/** One entry of the user's MAL manga list, trimmed for the mass-sync diff. */
+/** One entry of the user's MAL manga list — feeds both the mass-sync diff and import. */
 export interface MalListEntry {
 	malId: number;
+	title: string;
 	status: string;
 	chaptersRead: number;
 	numChapters: number;
+}
+
+/** What /api/mal/import reports for one MAL list entry pulled into bookmarks. */
+export interface MalImportResult {
+	imported: boolean;
+	reason?: 'unmatched';
+	slug?: string;
+	mangaId?: number;
+	title?: string;
 }
