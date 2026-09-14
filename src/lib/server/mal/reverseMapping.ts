@@ -29,12 +29,33 @@ const REPRINT = /colou?red|digital|official.?color/i;
 
 const slugCache = new Map<number, MalSyncSite[]>();
 
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Measured against the live API: ~2.5s is the spacing at which MAL-Sync stops
+// returning 429, and a single retry at that delay clears most limits. Kept to one
+// so the handler stays well inside Vercel's 10s function budget — the client's
+// own backoff (far longer, and free) covers anything this doesn't.
+const MALSYNC_RETRIES = 1;
+const MALSYNC_BACKOFF_MS = 2500;
+
+/**
+ * fetchWithRetry only re-sends a 429 when the response carries a short
+ * retry-after, and MAL-Sync sends none — so without backing off here every rate
+ * limit costs a full client round trip and one of its scarce retry attempts.
+ */
+async function fetchMalSync(malId: number): Promise<Response> {
+	for (let attempt = 0; ; attempt++) {
+		const res = await fetchWithRetry(MALSYNC_MAL_URL(malId));
+		if (res.status !== 429 || attempt >= MALSYNC_RETRIES) return res;
+		await delay(MALSYNC_BACKOFF_MS * 2 ** attempt);
+	}
+}
+
 /** MangaNato-family entries MAL-Sync maps to this MAL id, serializations first. */
 async function knownSites(malId: number): Promise<MalSyncSite[]> {
 	const cached = slugCache.get(malId);
 	if (cached) return cached;
 
-	const res = await fetchWithRetry(MALSYNC_MAL_URL(malId));
+	const res = await fetchMalSync(malId);
 	// MAL-Sync rate limits hard, and a 429 answers nothing about this manga. Left
 	// as an empty result it would be reported to the user as a permanent "not on
 	// the site" — so surface it and let the caller back off and retry instead.
