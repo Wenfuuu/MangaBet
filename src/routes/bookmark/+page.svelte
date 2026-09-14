@@ -3,7 +3,13 @@
 	import { invalidateAll } from '$app/navigation';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { PageData } from './$types';
-	import type { BookmarkItem, MalSyncResult, MalListEntry, MalImportResult } from '$lib/types';
+	import type {
+		BookmarkItem,
+		MalSyncResult,
+		MalListEntry,
+		MalImportResult,
+		MalReadStatus,
+	} from '$lib/types';
 	import BookmarkCard from '$lib/components/BookmarkCard.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { getMalOverride, getCachedMalId, cacheMalId } from '$lib/api';
@@ -266,9 +272,17 @@
 		}
 	}
 
-	// MAL statuses worth a bookmark. On-hold and dropped stay out — bookmarks have
-	// no status of their own, so importing those would just be clutter to remove.
-	const IMPORT_STATUSES = new Set(['reading', 'completed', 'plan_to_read']);
+	// Every MAL status comes across: bookmarks are a flat list with no status of
+	// their own, so there is nothing for on-hold or dropped to conflict with.
+	// Listed explicitly rather than accepting anything, so an entry MAL returns
+	// without a list status is skipped instead of silently imported.
+	const IMPORT_STATUSES: ReadonlySet<string> = new Set<MalReadStatus>([
+		'reading',
+		'completed',
+		'on_hold',
+		'dropped',
+		'plan_to_read',
+	]);
 
 	let importing = $state(false);
 	let importDone = $state(0);
@@ -305,7 +319,7 @@
 			}
 
 			const importable = listEntries.filter((e) => IMPORT_STATUSES.has(e.status) && e.title);
-			const offList = listEntries.length - importable.length;
+			const incomplete = listEntries.length - importable.length;
 			const queue = importable
 				.filter((e) => !bookmarkedMalIds.has(e.malId))
 				.map((entry) => ({ entry, attempts: 0 }));
@@ -398,7 +412,7 @@
 			}
 			const parts = [`${added} added`];
 			if (alreadyHad > 0) parts.push(`${alreadyHad} already bookmarked`);
-			if (offList > 0) parts.push(`${offList} skipped (on-hold/dropped)`);
+			if (incomplete > 0) parts.push(`${incomplete} skipped (no MAL status)`);
 			if (unmatched > 0) parts.push(`${unmatched} not found on site`);
 			if (rateLimited > 0) parts.push(`${rateLimited} rate-limited (run again in a minute)`);
 			if (failed > 0) parts.push(`${failed} failed`);
