@@ -37,6 +37,7 @@
 	let selected = $state<MalSearchCandidate | null>(null);
 	let markOldCompleted = $state(false);
 	let saving = $state(false);
+	let queryInput = $state<HTMLInputElement | null>(null);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	// MAL search rejects queries over 64 chars, so prefill with a word-boundary
@@ -64,6 +65,7 @@
 		clearTimeout(debounceTimer);
 		if (q.trim().length < 3) {
 			results = [];
+			searching = false;
 			return;
 		}
 		searching = true;
@@ -182,12 +184,23 @@
 			<div class="px-5 pt-4 pb-3 border-b border-edge/10">
 				<div class="font-serif text-lg text-fg">Pick the correct MAL entry</div>
 				<div class="font-sans text-xs text-fg-faint mt-0.5">Progress for this manga will sync to the entry you choose.</div>
-				<input
-					type="text"
-					class="w-full mt-3 px-3 py-2 bg-fg/4 border border-edge/20 rounded-md font-sans text-sm text-fg outline-none focus:border-accent/50"
-					placeholder="Search MyAnimeList…"
-					bind:value={query}
-				/>
+				<div class="relative mt-3">
+					<input
+						bind:this={queryInput}
+						type="text"
+						class="w-full px-3 py-2 pr-9 bg-fg/4 border border-edge/20 rounded-md font-sans text-sm text-fg outline-none focus:border-accent/50"
+						placeholder="Search MyAnimeList…"
+						bind:value={query}
+					/>
+					{#if query}
+						<button
+							type="button"
+							aria-label="Clear search"
+							class="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 grid place-items-center bg-transparent border-none rounded text-base leading-none text-fg-faint cursor-pointer hover:text-fg"
+							onclick={() => { query = ''; queryInput?.focus(); }}
+						>×</button>
+					{/if}
+				</div>
 			</div>
 
 			<div class="flex-1 min-h-0 overflow-y-auto">
