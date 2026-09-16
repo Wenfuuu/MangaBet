@@ -55,7 +55,7 @@
 			} catch {
 				results = [];
 			}
-		}, 280);
+		}, 300);
 		return () => clearTimeout(debounceTimer);
 	});
 
