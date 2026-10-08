@@ -2,6 +2,8 @@
 	import { fmtBytes, fmtDate } from '$lib/utils';
 	import { proxyImage } from '$lib/api';
 	import { storageEstimate } from '$lib/offline';
+	import { exportChapterPdf, exportMangaZip } from '$lib/offlineExport';
+	import { showToast } from '$lib/stores/toast.svelte';
 	import {
 		listSavedChapters,
 		loadOfflineLibrary,
@@ -10,7 +12,7 @@
 		removeMangaOffline,
 		totalSavedBytes,
 	} from '$lib/stores/offline.svelte';
-	import type { SavedChapter } from '$lib/types';
+	import type { SaveProgress, SavedChapter } from '$lib/types';
 
 	interface MangaGroup {
 		slug: string;
@@ -108,6 +110,29 @@
 
 	function chapterHref(ch: SavedChapter) {
 		return `/manga/${ch.mangaSlug}/${ch.mangaId}/chapter/${ch.chapterSlug}`;
+	}
+
+	let exporting = $state<({ id: string } & SaveProgress) | null>(null);
+
+	async function runExport(id: string, task: (onProgress: (p: SaveProgress) => void) => Promise<void>) {
+		if (exporting) return;
+		exporting = { id, done: 0, total: 0 };
+		try {
+			await task((progress) => (exporting = { id, ...progress }));
+		} catch (err) {
+			showToast(err instanceof Error ? err.message : 'Could not export this chapter.');
+		} finally {
+			exporting = null;
+		}
+	}
+
+	function exportChapter(ch: SavedChapter) {
+		runExport(ch.key, (onProgress) => exportChapterPdf(ch, onProgress));
+	}
+
+	function exportManga(slug: string) {
+		const entries = chapters.filter((ch) => ch.mangaSlug === slug);
+		runExport(`manga:${slug}`, (onProgress) => exportMangaZip(entries, onProgress));
 	}
 </script>
 
@@ -254,6 +279,21 @@
 						</button>
 
 						<button
+							class="inline-flex items-center justify-center gap-1.5 min-w-8 h-8 px-2 shrink-0 bg-fg/5 text-fg-soft border border-fg/12 rounded-md cursor-pointer hover:text-fg transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+							title="Download {group.name} as a zip of PDFs"
+							aria-label="Download {group.name} as a zip of PDFs"
+							disabled={!!exporting}
+							onclick={() => exportManga(group.slug)}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+							</svg>
+							{#if exporting?.id === `manga:${group.slug}`}
+								<span class="font-mono text-[10px]">{exporting.done}/{exporting.total}</span>
+							{/if}
+						</button>
+
+						<button
 							class="inline-flex items-center justify-center w-8 h-8 shrink-0 bg-fg/5 text-fg-soft border border-fg/12 rounded-md cursor-pointer hover:text-fg transition-colors duration-150"
 							title="Remove all saved chapters of {group.name}"
 							aria-label="Remove all saved chapters of {group.name}"
@@ -294,6 +334,21 @@
 											</div>
 										</div>
 									</a>
+									<button
+										class="inline-flex items-center justify-center gap-1.5 min-w-8 h-8 px-1.5 shrink-0 bg-transparent text-fg-quiet border border-transparent rounded-md cursor-pointer hover:text-fg hover:border-fg/12 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+										title="Download as PDF"
+										aria-label="Download chapter {ch.chapterNumber} as PDF"
+										disabled={!!exporting}
+										onclick={() => exportChapter(ch)}
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+											<polyline points="14 3 14 8 19 8" />
+										</svg>
+										{#if exporting?.id === ch.key}
+											<span class="font-mono text-[10px]">{exporting.done}/{exporting.total}</span>
+										{/if}
+									</button>
 									<button
 										class="inline-flex items-center justify-center w-8 h-8 shrink-0 bg-transparent text-fg-quiet border border-transparent rounded-md cursor-pointer hover:text-fg hover:border-fg/12 transition-colors duration-150"
 										title="Remove offline copy"
