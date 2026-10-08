@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, type PDFImage } from 'pdf-lib';
 import { Zip, ZipPassThrough } from 'fflate';
 import { OFFLINE_CACHE } from '$lib/offlineCache';
 import type { SaveProgress, SavedChapter } from '$lib/types';
@@ -7,6 +7,10 @@ const IMAGE_PATH = '/api/image';
 const JPEG_QUALITY = 0.92;
 // Acrobat and most phone viewers reject pages larger than this, which tall webtoon strips exceed.
 const MAX_PDF_PAGE_UNITS = 14400;
+// The source cuts tall manga pages into strips of exactly this height; a strip that
+// is full-height means the page continues in the next image of the same width.
+const SOURCE_SLICE_HEIGHT = 1500;
+const SEAM_OVERLAP_UNITS = 1;
 
 type ProgressHandler = (progress: SaveProgress) => void;
 
@@ -61,16 +65,28 @@ async function transcodeToJpeg(blob: Blob): Promise<Uint8Array> {
 	return new Uint8Array(await jpeg.arrayBuffer());
 }
 
-async function addPage(pdf: PDFDocument, blob: Blob): Promise<void> {
+async function embedImage(pdf: PDFDocument, blob: Blob): Promise<PDFImage> {
 	const bytes = new Uint8Array(await blob.arrayBuffer());
-	const image = isPng(bytes)
-		? await pdf.embedPng(bytes)
-		: await pdf.embedJpg(isJpeg(bytes) ? bytes : await transcodeToJpeg(blob));
+	return isPng(bytes)
+		? pdf.embedPng(bytes)
+		: pdf.embedJpg(isJpeg(bytes) ? bytes : await transcodeToJpeg(blob));
+}
 
-	const scale = Math.min(1, MAX_PDF_PAGE_UNITS / Math.max(image.width, image.height));
-	const width = image.width * scale;
-	const height = image.height * scale;
-	pdf.addPage([width, height]).drawImage(image, { x: 0, y: 0, width, height });
+function addStackedPage(pdf: PDFDocument, slices: PDFImage[]): void {
+	const width = slices[0].width;
+	const height = slices.reduce((sum, slice) => sum + slice.height, 0);
+	const scale = Math.min(1, MAX_PDF_PAGE_UNITS / Math.max(width, height));
+	const page = pdf.addPage([width * scale, height * scale]);
+
+	let top = height * scale;
+	for (const [index, slice] of slices.entries()) {
+		const sliceHeight = slice.height * scale;
+		top -= sliceHeight;
+		// Each slice overlaps the next by a hair, which is painted over, so antialiasing
+		// at the seam cannot leave a visible line.
+		const overlap = index < slices.length - 1 ? SEAM_OVERLAP_UNITS : 0;
+		page.drawImage(slice, { x: 0, y: top - overlap, width: width * scale, height: sliceHeight + overlap });
+	}
 }
 
 async function buildChapterPdf(entry: SavedChapter, onProgress?: ProgressHandler): Promise<Uint8Array> {
@@ -78,14 +94,28 @@ async function buildChapterPdf(entry: SavedChapter, onProgress?: ProgressHandler
 	const imageUrls = entry.urls.filter((url) => url.startsWith(IMAGE_PATH));
 	const pdf = await PDFDocument.create();
 
+	let slices: PDFImage[] = [];
+	const flush = () => {
+		if (slices.length) addStackedPage(pdf, slices);
+		slices = [];
+	};
+
 	for (const [index, url] of imageUrls.entries()) {
 		const res = await cache.match(url);
 		if (!res) {
 			throw new Error(`Page ${index + 1} of Ch. ${entry.chapterNumber} is missing from the offline cache`);
 		}
-		await addPage(pdf, await res.blob());
+		const image = await embedImage(pdf, await res.blob());
+
+		const previous = slices.at(-1);
+		const continuesPrevious =
+			previous && previous.height === SOURCE_SLICE_HEIGHT && previous.width === image.width;
+		if (!continuesPrevious) flush();
+		slices.push(image);
+
 		onProgress?.({ done: index + 1, total: imageUrls.length });
 	}
+	flush();
 
 	return pdf.save();
 }
