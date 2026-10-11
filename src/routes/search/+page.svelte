@@ -1,10 +1,14 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import SearchResultCard from '$lib/components/SearchResultCard.svelte';
+	import MangaPreviewPopover from '$lib/components/MangaPreviewPopover.svelte';
 	import RateLimitNotice from '$lib/components/RateLimitNotice.svelte';
 	import { mangaDetailUrl, saveMangaDTO } from '$lib/api';
+	import type { MangaPreviewTarget } from '$lib/types';
 
 	let { data }: { data: PageData } = $props();
+
+	let previewTarget = $state<MangaPreviewTarget | null>(null);
 
 	let pageTitle = $derived(
 		data.q.trim() ? `Search: ${data.q} · MangaBet` : 'Popular right now · MangaBet'
@@ -47,7 +51,12 @@
 		{#key `${data.q}:${data.page}`}
 			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 sm:gap-x-7 gap-y-8 sm:gap-y-9">
 				{#each data.results as m}
-					<SearchResultCard manga={m} href={mangaDetailUrl(m)} onclick={() => saveMangaDTO(m)} />
+					<SearchResultCard
+						manga={m}
+						href={mangaDetailUrl(m)}
+						onclick={() => saveMangaDTO(m)}
+						onpreview={(point) => (previewTarget = point && { slug: m.slug, ...point })}
+					/>
 				{/each}
 			</div>
 		{/key}
@@ -85,3 +94,5 @@
 		</div>
 	{/if}
 </div>
+
+<MangaPreviewPopover target={previewTarget} />

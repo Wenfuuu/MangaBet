@@ -56,3 +56,9 @@ export interface MangaPreviewDTO {
 	lastUpdated: string;
 	status: string;
 }
+
+export interface MangaPreviewTarget {
+	slug: string;
+	x: number;
+	y: number;
+}
