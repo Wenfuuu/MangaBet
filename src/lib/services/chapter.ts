@@ -52,6 +52,16 @@ export async function getChapters(slug: string, cookieHeader?: string): Promise<
 	return [...new Map(chapters.map((c) => [c.slug, c])).values()];
 }
 
+export async function getChapterCount(slug: string, cookieHeader?: string): Promise<number> {
+	const res = await fetchWithRetry(ENDPOINTS.chapters(slug, 0, 1), {
+		headers: withUpstreamAuth(cookieHeader),
+		cache: 'no-store',
+	});
+	ensureOk(res, 'Chapter count fetch');
+	const json: ChaptersResponse = await res.json();
+	return json.data.pagination.total;
+}
+
 export interface ChapterPageData {
 	images: string[];
 	mangaName: string;

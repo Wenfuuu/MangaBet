@@ -48,3 +48,11 @@ export interface MangaDetailDTO {
 	views: number;
 	lastUpdated: Date;
 }
+
+export interface MangaPreviewDTO {
+	rating: number;
+	chapterCount: number;
+	views: number;
+	lastUpdated: string;
+	status: string;
+}
