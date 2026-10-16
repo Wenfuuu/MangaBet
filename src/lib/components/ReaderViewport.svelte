@@ -213,7 +213,9 @@
 					/>
 				{/if}
 			{/each}
-			<ChapterEndPanel {mangaSlug} {mangaId} {nextChapter} />
+			<div class="long-end">
+				<ChapterEndPanel {mangaSlug} {mangaId} {nextChapter} />
+			</div>
 		</div>
 	</div>
 {:else if mode === 'wide'}
@@ -322,6 +324,16 @@
 		padding: 24px 16px;
 		display: flex;
 		flex-direction: column;
+	}
+
+	@media (max-width: 640px) {
+		.long-inner {
+			padding-inline: 0;
+		}
+
+		.long-end {
+			padding-inline: 16px;
+		}
 	}
 
 	/* Wide strip */
