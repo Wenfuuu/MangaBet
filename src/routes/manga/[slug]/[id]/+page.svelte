@@ -128,62 +128,39 @@
 				<h1 class="font-serif text-4xl sm:text-[56px] font-semibold text-fg m-0 tracking-[-0.025em] leading-none text-balance">{data.detail.name}</h1>
 				<div class="font-sans text-base text-fg-soft mt-3.5">by <span class="text-fg">{data.detail.author}</span></div>
 
-				<div class="flex flex-wrap gap-6 sm:gap-8 mt-7">
-					<div>
-						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Rating</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="#c9a37a" class="inline align-middle mr-1">
-								<path d="M12 2l3 7 7 .6-5.3 4.7L18 22l-6-3.7L6 22l1.3-7.7L2 9.6 9 9z" />
-							</svg>{data.detail.rating}
-						</div>
-					</div>
-					<div>
-						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Chapters</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">{chapters.length}</div>
-					</div>
-					<div>
-						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Readers</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">{fmtViews(data.detail.views)}</div>
-					</div>
-					<div>
-						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Updated</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">{fmtDate(new Date(data.detail.lastUpdated))}</div>
-					</div>
-					<div>
-						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Status</div>
-						<div class="font-serif text-xl sm:text-[22px] font-medium {data.detail.status === 'Ongoing' ? 'text-accent' : 'text-fg'}">{data.detail.status}</div>
-					</div>
-				</div>
-
-				<div class="flex flex-wrap gap-2 mt-6">
-					{#each data.detail.genres as g}
-						<span class="px-3 py-1 bg-tint/20 border border-accent/20 rounded-full font-sans text-xs text-accent">{g}</span>
-					{/each}
-				</div>
-
-				<div class="flex flex-wrap gap-3 items-center mt-6">
-						{#await data.progress then progress}
-							{#if progress}
-								<a
-									class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-accent text-accent-on rounded-lg font-sans text-sm font-semibold"
-									href={chapterUrl({ slug: progress.slug })}
-								>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-										<polygon points="5,3 19,12 5,21" />
-									</svg>
-									Continue · Ch. {progress.number}
-								</a>
-							{/if}
-						{/await}
+				{#snippet startButton(primary: boolean)}
 					<a
-						class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-accent text-accent-on rounded-lg font-sans text-sm font-semibold"
+						class="inline-flex items-center gap-2 py-3.5 rounded-lg font-sans text-sm {primary
+							? 'px-5 sm:px-7 bg-accent text-accent-on font-semibold'
+							: 'px-4 sm:px-5 bg-fg/5 text-fg border border-fg/15 font-medium'}"
 						href={chapterUrl(firstChapter)}
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-							<polygon points="5,3 19,12 5,21" />
-						</svg>
+						{#if primary}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+								<polygon points="5,3 19,12 5,21" />
+							</svg>
+						{/if}
 						Start from Ch. {firstChapter.number}
 					</a>
+				{/snippet}
+
+				<div class="flex flex-wrap gap-3 items-center mt-6">
+					{#await data.progress}
+						{@render startButton(true)}
+					{:then progress}
+						{#if progress}
+							<a
+								class="inline-flex items-center gap-2 px-5 sm:px-7 py-3.5 bg-accent text-accent-on rounded-lg font-sans text-sm font-semibold"
+								href={chapterUrl({ slug: progress.slug })}
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+									<polygon points="5,3 19,12 5,21" />
+								</svg>
+								Continue · Ch. {progress.number}
+							</a>
+						{/if}
+						{@render startButton(!progress)}
+					{/await}
 					<a
 						class="inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 bg-fg/5 text-fg border border-fg/15 rounded-lg font-sans text-sm font-medium"
 						href={chapterUrl(chapters[0])}
@@ -237,6 +214,39 @@
 							</svg>
 						{/if}
 					</button>
+				</div>
+
+				<div class="flex flex-wrap gap-6 sm:gap-8 mt-7">
+					<div>
+						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Rating</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="#c9a37a" class="inline align-middle mr-1">
+								<path d="M12 2l3 7 7 .6-5.3 4.7L18 22l-6-3.7L6 22l1.3-7.7L2 9.6 9 9z" />
+							</svg>{data.detail.rating}
+						</div>
+					</div>
+					<div>
+						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Chapters</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">{chapters.length}</div>
+					</div>
+					<div>
+						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Readers</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">{fmtViews(data.detail.views)}</div>
+					</div>
+					<div>
+						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Updated</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium text-fg">{fmtDate(new Date(data.detail.lastUpdated))}</div>
+					</div>
+					<div>
+						<div class="font-mono text-[10px] text-fg-faint tracking-[0.14em] uppercase mb-1">Status</div>
+						<div class="font-serif text-xl sm:text-[22px] font-medium {data.detail.status === 'Ongoing' ? 'text-accent' : 'text-fg'}">{data.detail.status}</div>
+					</div>
+				</div>
+
+				<div class="flex flex-wrap gap-2 mt-6">
+					{#each data.detail.genres as g}
+						<span class="px-3 py-1 bg-tint/20 border border-accent/20 rounded-full font-sans text-xs text-accent">{g}</span>
+					{/each}
 				</div>
 
 				<MalMappingCard {slug} mangaName={data.detail.name} />
