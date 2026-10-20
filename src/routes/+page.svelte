@@ -64,22 +64,13 @@
 <svelte:head><title>MangaBet</title></svelte:head>
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-8 py-12 sm:py-16 pb-24">
-	<div class="mb-12">
-		<div class="font-mono text-[11px] text-fg-faint tracking-[0.18em] uppercase mb-2.5">Welcome back</div>
-		<h1 class="font-serif text-4xl sm:text-5xl font-semibold text-fg m-0 tracking-[-0.02em]">Find your next chapter.</h1>
-		<p class="font-sans text-[15px] text-fg-soft mt-3 max-w-[560px]">
-			Search any title above to begin reading.
-		</p>
-		<p class="font-sans text-[15px] text-fg-soft mt-3 max-w-[560px]">
-			Your reading progress is saved on this device, so you can pick up where you left off.
-		</p>
-	</div>
+	<h1 class="font-serif text-4xl sm:text-5xl font-semibold text-fg m-0 mb-10 tracking-[-0.02em]">Find your next chapter.</h1>
 
 	<section>
 		<div class="mb-6 flex items-baseline justify-between gap-4">
 			<div>
 				<h2 class="font-serif text-2xl sm:text-[28px] font-semibold text-fg m-0 tracking-[-0.015em]">Continue reading</h2>
-				<p class="font-sans text-[13px] text-fg-faint mt-1 mb-0">Where you left off</p>
+				<p class="font-sans text-[13px] text-fg-faint mt-1 mb-0">Where you left off, saved on this device</p>
 			</div>
 			{#if continueItems.length > 0}
 				<button
