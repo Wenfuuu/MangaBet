@@ -212,6 +212,8 @@
 	// Keyboard navigation
 	$effect(() => {
 		const handleKey = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement | null;
+			if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
 			if (mode === 'wide') return;
 			if (mode === 'long' && e.key === ' ') return;
 			if (e.key === 'ArrowRight' || e.key === ' ') {
