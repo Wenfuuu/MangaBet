@@ -24,6 +24,21 @@
 		last: number;
 	}
 
+	// Offline data can't be restored once deleted, so bulk removals take a second click.
+	let armed = $state<string | null>(null);
+	let armTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function confirmThen(key: string, run: () => void) {
+		clearTimeout(armTimer);
+		if (armed === key) {
+			armed = null;
+			run();
+			return;
+		}
+		armed = key;
+		armTimer = setTimeout(() => (armed = null), 4000);
+	}
+
 	let estimate = $state<{ usage: number; quota: number } | null>(null);
 	let query = $state('');
 	let open = $state<Record<string, boolean>>({});
@@ -162,10 +177,12 @@
 
 		{#if chapters.length}
 			<button
-				class="px-4 py-2.5 bg-fg/5 text-fg-soft border border-fg/15 rounded-lg font-sans text-sm font-medium cursor-pointer hover:text-fg transition-colors duration-150"
-				onclick={() => removeAllOffline()}
+				class="px-4 py-2.5 border rounded-lg font-sans text-sm font-medium cursor-pointer transition-colors duration-150 {armed === 'all'
+					? 'bg-danger/18 text-danger-fg border-danger/35'
+					: 'bg-fg/5 text-fg-soft border-fg/15 hover:text-fg'}"
+				onclick={() => confirmThen('all', () => removeAllOffline())}
 			>
-				Remove all
+				{armed === 'all' ? `Remove all ${chapters.length} chapters?` : 'Remove all'}
 			</button>
 		{/if}
 	</div>
@@ -294,14 +311,19 @@
 						</button>
 
 						<button
-							class="inline-flex items-center justify-center w-8 h-8 shrink-0 bg-fg/5 text-fg-soft border border-fg/12 rounded-md cursor-pointer hover:text-fg transition-colors duration-150"
-							title="Remove all saved chapters of {group.name}"
-							aria-label="Remove all saved chapters of {group.name}"
-							onclick={() => removeMangaOffline(group.slug)}
+							class="inline-flex items-center justify-center gap-1.5 h-8 shrink-0 border rounded-md font-sans text-xs cursor-pointer transition-colors duration-150 {armed === group.slug
+								? 'px-2.5 bg-danger/18 text-danger-fg border-danger/35'
+								: 'w-8 bg-fg/5 text-fg-soft border-fg/12 hover:text-fg'}"
+							title={armed === group.slug ? 'Click again to remove' : `Remove all saved chapters of ${group.name}`}
+							aria-label={armed === group.slug
+								? `Confirm removing all saved chapters of ${group.name}`
+								: `Remove all saved chapters of ${group.name}`}
+							onclick={() => confirmThen(group.slug, () => removeMangaOffline(group.slug))}
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
 								<path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
 							</svg>
+							{#if armed === group.slug}Remove?{/if}
 						</button>
 					</div>
 
