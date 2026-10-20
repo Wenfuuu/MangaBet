@@ -3,6 +3,7 @@
 	import ContinueCard from '$lib/components/ContinueCard.svelte';
 	import type { ContinueItem } from '$lib/types';
 	import type { MangaSearchDTO } from '$lib/types';
+	import { showToast } from '$lib/stores/toast.svelte';
 
 	const PAGE_SIZE = 9;
 
@@ -12,7 +13,7 @@
 	let continueItems = $derived(allItems.slice(0, visibleCount));
 	let hasMore = $derived(visibleCount < allItems.length);
 
-	$effect(() => {
+	function readItems(): ContinueItem[] {
 		const idx = getReaderIndex();
 		const items: ContinueItem[] = [];
 		for (let i = 0; i < localStorage.length; i++) {
@@ -34,30 +35,62 @@
 			items.push({ manga, chapterSlug, readAt: idx[slug] ?? 0 });
 		}
 		items.sort((a, b) => b.readAt - a.readAt);
-		allItems = items;
+		return items;
+	}
+
+	$effect(() => {
+		allItems = readItems();
 	});
 
 	function loadMore() {
 		visibleCount += PAGE_SIZE;
 	}
 
+	const READER_PREF_KEYS = new Set(['mangabet:reader:mode', 'mangabet:reader:mangaMode']);
+
+	function snapshot(keys: string[]): [string, string][] {
+		return keys.flatMap((key) => {
+			const value = localStorage.getItem(key);
+			return value === null ? [] : [[key, value] as [string, string]];
+		});
+	}
+
+	function offerUndo(message: string, saved: [string, string][]) {
+		showToast(message, {
+			durationMs: 6000,
+			action: {
+				label: 'Undo',
+				onClick: () => {
+					for (const [key, value] of saved) localStorage.setItem(key, value);
+					allItems = readItems();
+				},
+			},
+		});
+	}
+
 	function removeItem(slug: string) {
+		const saved = snapshot([`mangabet:reader:${slug}`, `mangabet:manga:${slug}`, 'mangabet:reader:index']);
+		const name = allItems.find((item) => item.manga.slug === slug)?.manga.name ?? 'Series';
 		localStorage.removeItem(`mangabet:reader:${slug}`);
 		localStorage.removeItem(`mangabet:manga:${slug}`);
 		removeFromReaderIndex(slug);
 		allItems = allItems.filter((item) => item.manga.slug !== slug);
+		offerUndo(`${name} removed from history.`, saved);
 	}
 
 	function clearHistory() {
 		const keysToRemove: string[] = [];
 		for (let i = 0; i < localStorage.length; i++) {
 			const key = localStorage.key(i);
-			if (key && (key.startsWith('mangabet:reader:') || key.startsWith('mangabet:manga:'))) {
+			if (!key || READER_PREF_KEYS.has(key)) continue;
+			if (key.startsWith('mangabet:reader:') || key.startsWith('mangabet:manga:')) {
 				keysToRemove.push(key);
 			}
 		}
+		const saved = snapshot(keysToRemove);
 		for (const key of keysToRemove) localStorage.removeItem(key);
 		allItems = [];
+		offerUndo('Reading history cleared.', saved);
 	}
 </script>
 
