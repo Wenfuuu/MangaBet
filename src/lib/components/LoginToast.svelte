@@ -1,25 +1,18 @@
-<script lang="ts" module>
-	// resets on hard refresh, persists across SPA navigations.
-	let shownThisSession = false;
-</script>
-
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { showToast } from '$lib/stores/toast.svelte';
+	import { claimPromo, isQuietPath } from '$lib/promo';
 
 	const AUTO_DISMISS_MS = 6000;
-	const AUTH_PATHS = ['/login', '/register'];
 
 	let isLoggedIn = $derived(Boolean(page.data?.isLoggedIn));
-	let isAuthPage = $derived(AUTH_PATHS.some((p) => page.url.pathname.startsWith(p)));
+	let quiet = $derived(isQuietPath(page.url.pathname));
 
 	$effect(() => {
-		if (shownThisSession) return;
-		if (isLoggedIn) return;
-		if (isAuthPage) return;
+		if (isLoggedIn || quiet) return;
+		if (!claimPromo('login')) return;
 
-		shownThisSession = true;
 		showToast('Sign in to unlock bookmarks & history.', {
 			durationMs: AUTO_DISMISS_MS,
 			action: { label: 'Sign in', onClick: () => goto('/login') },

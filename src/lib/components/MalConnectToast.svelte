@@ -1,24 +1,17 @@
-<script lang="ts" module>
-	// resets on hard refresh, persists across SPA navigations.
-	let shownThisSession = false;
-</script>
-
 <script lang="ts">
 	import { page } from '$app/state';
 	import { showToast } from '$lib/stores/toast.svelte';
+	import { claimPromo, isQuietPath } from '$lib/promo';
 
 	const AUTO_DISMISS_MS = 6000;
-	const AUTH_PATHS = ['/login', '/register'];
 
 	let malConnected = $derived(Boolean(page.data?.malConnected));
-	let isAuthPage = $derived(AUTH_PATHS.some((p) => page.url.pathname.startsWith(p)));
+	let quiet = $derived(isQuietPath(page.url.pathname));
 
 	$effect(() => {
-		if (shownThisSession) return;
-		if (malConnected) return;
-		if (isAuthPage) return;
+		if (malConnected || quiet) return;
+		if (!claimPromo('mal')) return;
 
-		shownThisSession = true;
 		showToast('Connect MyAnimeList to auto-sync your reading progress.', {
 			durationMs: AUTO_DISMISS_MS,
 			action: {
