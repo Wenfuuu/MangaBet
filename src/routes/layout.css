@@ -94,6 +94,18 @@ body {
 	background: var(--color-surface-4);
 }
 
+/* Unlayered, so it wins over Tailwind's outline utilities. Text fields are left to their
+ * own wrapper border/caret focus treatment. */
+:focus-visible {
+	outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, transparent);
+	outline-offset: 2px;
+}
+
+input:not([type='range'], [type='checkbox'], [type='radio']):focus-visible,
+textarea:focus-visible {
+	outline: none;
+}
+
 ::selection {
 	background: color-mix(in oklab, var(--color-accent) 30%, transparent);
 }

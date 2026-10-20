@@ -14,7 +14,7 @@
 <div
 	class="group flex gap-4 w-full bg-surface hover:bg-fg/4 border border-edge/15 hover:border-edge/25 rounded-lg p-3 sm:p-4 transition-colors duration-150 relative"
 >
-	<a class="absolute inset-0" aria-label={manga.name} {href}></a>
+	<a class="absolute inset-0 rounded-[inherit]" aria-label={manga.name} {href}></a>
 
 	<div class="w-[72px] sm:w-[88px] aspect-[2/3] shrink-0 overflow-hidden rounded-md relative bg-surface-2 z-[1] pointer-events-none">
 		<img class="absolute inset-0 w-full h-full object-fill" src={proxyImage(manga.thumb)} alt={manga.name} loading="lazy" />

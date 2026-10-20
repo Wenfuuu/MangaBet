@@ -18,7 +18,7 @@
 <div
 	class="relative flex gap-4 p-4 bg-surface border border-edge/10 rounded-[10px] transition-all duration-200 w-full hover:bg-surface-2 hover:border-edge/25"
 >
-	<a class="absolute inset-0" aria-label={manga.name} {href}></a>
+	<a class="absolute inset-0 rounded-[inherit]" aria-label={manga.name} {href}></a>
 
 	<div class="w-[76px] h-[114px] shrink-0 rounded-[4px] overflow-hidden bg-surface z-[1] pointer-events-none">
 		<img class="w-full h-full object-fill" src={proxyImage(manga.thumb)} alt={manga.name} loading="lazy" />
