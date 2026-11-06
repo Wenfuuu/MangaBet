@@ -25,9 +25,24 @@ export function isUpstreamError(err: unknown): err is UpstreamError {
 	return err instanceof UpstreamError;
 }
 
-// Shared upstream response check: 429 → RateLimitError, other non-2xx → Error.
+// Thrown when upstream rejects the session token, so callers can tell an expired
+// login from an outage.
+export class UnauthorizedError extends Error {
+	constructor(message = 'Upstream session rejected') {
+		super(message);
+		this.name = 'UnauthorizedError';
+	}
+}
+
+export function isUnauthorizedError(err: unknown): err is UnauthorizedError {
+	return err instanceof UnauthorizedError;
+}
+
+// Shared upstream response check: 429 → RateLimitError, 401 → UnauthorizedError,
+// other non-2xx → Error.
 export function ensureOk(res: Response, context: string): Response {
 	if (res.status === 429) throw new RateLimitError();
+	if (res.status === 401) throw new UnauthorizedError();
 	if (!res.ok) throw new Error(`${context} failed: ${res.status}`);
 	return res;
 }
