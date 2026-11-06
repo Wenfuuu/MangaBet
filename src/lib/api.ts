@@ -19,7 +19,6 @@ export const ENDPOINTS = {
 	chapters: (slug: string, offset = 0, limit = 50) => `${API_BASE_URL}/api/manga/${slug}/chapters?offset=${offset}&limit=${limit}`,
 	chapterPage: (mangaSlug: string, chapterSlug: string) => `${API_BASE_URL}/manga/${mangaSlug}/${chapterSlug}`,
 	mangaDetail: (slug: string) => `${API_BASE_URL}/manga/${slug}`,
-	captcha: () => `${API_BASE_URL}/captcha`,
 	login: () => `${API_BASE_URL}/login`,
 	register: () => `${API_BASE_URL}/register`,
 	userChangesInfo: () => `${API_BASE_URL}/user_changes_info`,

@@ -8,7 +8,7 @@ It proxies an upstream manga source through server-side API routes and adds read
 - Browse latest releases and search manga
 - Manga detail pages with chapter lists
 - Chapter reader with continue-reading support
-- Account login and registration (with captcha) against the upstream source
+- Account login by pasting the upstream session token, with registration handled on the upstream site
 - Bookmarks and reading history
 - Downloads page for offline reading
 - Optional MyAnimeList integration:

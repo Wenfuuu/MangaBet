@@ -1,24 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/state';
-	import type { PageData, ActionData } from './$types';
+	import { ENDPOINTS } from '$lib/api';
+	import type { ActionData } from './$types';
 
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let { form }: { form: ActionData } = $props();
 
 	let submitting = $state(false);
-	let refreshing = $state(false);
-	let justRegistered = $derived(page.url.searchParams.get('registered') === '1');
-
-	async function refreshCaptcha() {
-		refreshing = true;
-		try {
-			await fetch('/api/captcha');
-			await invalidateAll();
-		} finally {
-			refreshing = false;
-		}
-	}
 </script>
 
 <svelte:head>
@@ -29,16 +16,22 @@
 	<div class="card">
 		<div class="header">
 			<h1 class="title">Sign in</h1>
-			<p class="sub">Welcome back to MangaBet.</p>
+			<p class="sub">Connect your mangabats account to MangaBet.</p>
 		</div>
-
-		{#if justRegistered && !form?.error}
-			<div class="success" role="status">Account created. Please sign in.</div>
-		{/if}
 
 		{#if form?.error}
 			<div class="error" role="alert">{form.error}</div>
 		{/if}
+
+		<ol class="steps">
+			<li>
+				<a class="alt-link" href={ENDPOINTS.login()} target="_blank" rel="noopener noreferrer"
+					>Sign in on mangabats</a
+				>
+			</li>
+			<li>Press F12, then open Application (Storage in Firefox), then Cookies.</li>
+			<li>Copy the value of the cookie named <code>token</code>.</li>
+		</ol>
 
 		<form
 			method="POST"
@@ -51,61 +44,22 @@
 			}}
 		>
 			<label class="field">
-				<span class="label">Username</span>
+				<span class="label">Token</span>
 				<input
-					name="username"
+					name="token"
 					type="text"
-					autocomplete="username"
-					value={form?.username ?? ''}
-					required
-					class="input"
-				/>
-			</label>
-
-			<label class="field">
-				<span class="label">Password</span>
-				<input
-					name="password"
-					type="password"
-					autocomplete="current-password"
-					required
-					class="input"
-				/>
-			</label>
-
-			<div class="field">
-				<span class="label">Captcha</span>
-				<div class="captcha-row">
-					<div class="captcha-img-wrap">
-						<img src={data.captchaImage} alt="Captcha" class="captcha-img" />
-					</div>
-					<button
-						type="button"
-						class="refresh-btn"
-						onclick={refreshCaptcha}
-						disabled={refreshing}
-						aria-label="Refresh captcha"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-							<path d="M3 3v5h5" />
-						</svg>
-					</button>
-				</div>
-				<input
-					name="captcha"
-					type="text"
-					inputmode="numeric"
 					autocomplete="off"
-					placeholder="Enter the 3 digits above"
+					autocapitalize="off"
+					spellcheck="false"
 					required
-					maxlength="6"
 					class="input"
 				/>
-			</div>
+			</label>
+
+			<p class="hint">This token opens your account. Paste it only here.</p>
 
 			<button type="submit" class="submit" disabled={submitting}>
-				{submitting ? 'Signing in…' : 'Sign in'}
+				{submitting ? 'Checking token…' : 'Sign in'}
 			</button>
 		</form>
 
@@ -165,15 +119,30 @@
 		margin-bottom: 16px;
 	}
 
-	.success {
+	.steps {
+		margin: 0 0 18px;
+		padding-left: 20px;
+		list-style: decimal;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
 		font-family: 'Inter', sans-serif;
 		font-size: 13px;
-		color: #a8d8a8;
-		background: rgba(70, 140, 80, 0.1);
-		border: 1px solid rgba(70, 140, 80, 0.25);
-		border-radius: 6px;
-		padding: 10px 12px;
-		margin-bottom: 16px;
+		line-height: 1.5;
+		color: var(--text-soft);
+	}
+
+	.steps code {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 12px;
+		color: var(--text);
+	}
+
+	.hint {
+		margin: -8px 0 0;
+		font-family: 'Inter', sans-serif;
+		font-size: 12px;
+		color: var(--text-faint);
 	}
 
 	form {
@@ -211,51 +180,6 @@
 
 	.input:focus {
 		border-color: rgba(201, 163, 122, 0.5);
-	}
-
-	.captcha-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 8px;
-	}
-
-	.captcha-img-wrap {
-		background: #fff;
-		border-radius: 4px;
-		padding: 2px;
-		display: grid;
-		place-items: center;
-	}
-
-	.captcha-img {
-		display: block;
-		width: 100px;
-		height: 45px;
-		border-radius: 2px;
-	}
-
-	.refresh-btn {
-		background: rgba(232, 220, 203, 0.05);
-		border: 1px solid rgba(232, 220, 203, 0.12);
-		border-radius: 6px;
-		color: var(--text-soft);
-		width: 36px;
-		height: 36px;
-		display: grid;
-		place-items: center;
-		cursor: pointer;
-		transition: all 120ms;
-	}
-
-	.refresh-btn:hover:not(:disabled) {
-		color: var(--text);
-		background: rgba(201, 163, 122, 0.1);
-	}
-
-	.refresh-btn:disabled {
-		opacity: 0.4;
-		cursor: wait;
 	}
 
 	.submit {
